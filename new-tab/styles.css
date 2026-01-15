@@ -1,5 +1,10 @@
-/* Material 3 Design Variables */
+/* ============================================
+   CSS CUSTOM PROPERTIES - DESIGN TOKENS
+   ============================================ */
+
 :root {
+    /* ===== Color Palette ===== */
+    /* Material 3 Light Theme Colors */
     --md-sys-color-primary: #6200ee;
     --md-sys-color-on-primary: #ffffff;
     --md-sys-color-secondary: #03dac6;
@@ -10,28 +15,106 @@
     --md-sys-color-on-surface: #000000;
     --md-sys-color-error: #b00020;
     --md-sys-color-on-error: #ffffff;
+    
+    /* Hover State Colors (Light Theme) */
+    --hover-primary-bg: #7c3aed;
+    --hover-icon-bg: rgba(98, 0, 238, 0.08);
+    
+    /* ===== Typography ===== */
+    --font-family-primary: 'Roboto', sans-serif;
+    --font-size-hero: 3rem;
+    --font-size-heading: 1.5rem;
+    --font-size-body: 1rem;
+    --font-size-small: 0.875rem;
+    --font-size-icon: 24px;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing-normal: 0.5px;
+    
+    /* ===== Spacing ===== */
+    --spacing-xs: 2px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 20px;
+    --spacing-xxl: 24px;
+    --spacing-xxxl: 10px;
+    
+    /* ===== Sizing ===== */
+    --icon-size: 24px;
+    --icon-btn-padding: 8px;
+    --switch-width: 50px;
+    --switch-height: 25px;
+    --switch-thumb-size: 21px;
+    --switch-thumb-offset: 2px;
+    --switch-thumb-translate: 24px;
+    --settings-panel-width: 400px;
+    
+    /* ===== Border Radius ===== */
+    --border-radius-sm: 4px;
+    --border-radius-md: 25px;
+    --border-radius-circle: 50%;
+    
+    /* ===== Transitions ===== */
+    --transition-fast: 0.2s;
+    --transition-medium: 0.3s;
+    --transition-slow: 0.4s;
+    --transition-easing-standard: ease;
+    --transition-easing-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* ===== Shadows ===== */
+    --shadow-panel: -4px 0 16px rgba(0, 0, 0, 0.2);
+    --shadow-hover: 0 2px 8px rgba(98, 0, 238, 0.3);
+    --shadow-active: 0 1px 4px rgba(98, 0, 238, 0.4);
+    
+    /* ===== Opacity Values ===== */
+    --opacity-border-light: rgba(0, 0, 0, 0.12);
+    --opacity-placeholder-light: rgba(0, 0, 0, 0.38);
+    --opacity-overlay: rgba(0, 0, 0, 0.5);
+    --opacity-hidden: 0;
+    --opacity-visible: 1;
+    
+    /* ===== Border Widths ===== */
+    --border-width-thin: 1px;
+    --border-width-thick: 2px;
 }
 
-/* Dark Theme Variables with Tinted Colors */
+/* ===== Dark Theme Overrides ===== */
 body.dark {
+    /* Dark Theme Colors */
     --md-sys-color-primary: #bb86fc;
     --md-sys-color-on-primary: #000000;
     --md-sys-color-secondary: #03dac6;
     --md-sys-color-on-secondary: #000000;
-    --md-sys-color-background: #1e1e1e; /* Tinted background color */
-    --md-sys-color-on-background: #e0e0e0; /* Tinted text color */
-    --md-sys-color-surface: #2c2c2c; /* Tinted surface color */
-    --md-sys-color-on-surface: #ffffff; /* Tinted text on surface */
+    --md-sys-color-background: #1e1e1e;
+    --md-sys-color-on-background: #e0e0e0;
+    --md-sys-color-surface: #2c2c2c;
+    --md-sys-color-on-surface: #ffffff;
     --md-sys-color-error: #cf6679;
     --md-sys-color-on-error: #000000;
+    
+    /* Hover State Colors (Dark Theme) */
+    --hover-primary-bg: #c4a3ff;
+    --hover-icon-bg: rgba(187, 134, 252, 0.12);
+    
+    /* Dark Theme Opacity Values */
+    --opacity-border-light: rgba(255, 255, 255, 0.12);
+    --opacity-placeholder-light: rgba(255, 255, 255, 0.38);
+    
+    /* Dark Theme Shadows */
+    --shadow-hover: 0 2px 8px rgba(187, 134, 252, 0.3);
 }
 
-/* Apply Theme Colors */
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+
 body {
     background-color: var(--md-sys-color-background);
     color: var(--md-sys-color-on-background);
-    font-family: 'Roboto', sans-serif;
-    transition: background-color 0.3s, color 0.3s;
+    font-family: var(--font-family-primary);
+    transition: background-color var(--transition-medium), color var(--transition-medium);
 }
 
 #app {
@@ -43,10 +126,14 @@ body {
     overflow: hidden;
 }
 
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+
 /* Hello World Text */
 #hello-world {
-    font-size: 3rem;
-    font-weight: bold;
+    font-size: var(--font-size-hero);
+    font-weight: var(--font-weight-bold);
     color: var(--md-sys-color-primary);
     text-align: center;
 }
@@ -54,28 +141,68 @@ body {
 /* Date Display */
 #date {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    font-size: 1rem;
+    bottom: var(--spacing-xxxl);
+    right: var(--spacing-xxxl);
+    font-size: var(--font-size-body);
     color: var(--md-sys-color-on-surface);
+}
+
+/* ============================================
+   HEADER & CONTROLS
+   ============================================ */
+
+/* Header Container */
+#header {
+    position: absolute;
+    top: var(--spacing-xxxl);
+    right: var(--spacing-xxxl);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+/* Customize Button */
+.icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: var(--icon-btn-padding);
+    border-radius: var(--border-radius-circle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast) var(--transition-easing-standard);
+}
+
+.icon-btn:hover {
+    background-color: var(--hover-icon-bg);
+}
+
+body.dark .icon-btn:hover {
+    background-color: var(--hover-icon-bg);
+}
+
+.icon-btn .material-symbols-outlined {
+    font-size: var(--font-size-icon);
+    color: var(--md-sys-color-on-surface);
+    transition: color var(--transition-medium);
 }
 
 /* Toggle Switch */
 #theme-toggle {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    display: flex;
+    align-items: center;
 }
 
 .switch {
     position: relative;
     display: inline-block;
-    width: 50px;
-    height: 25px;
+    width: var(--switch-width);
+    height: var(--switch-height);
 }
 
 .switch input {
-    opacity: 0;
+    opacity: var(--opacity-hidden);
     width: 0;
     height: 0;
 }
@@ -88,20 +215,20 @@ body {
     right: 0;
     bottom: 0;
     background-color: var(--md-sys-color-surface);
-    transition: 0.4s;
-    border-radius: 25px;
+    transition: var(--transition-slow);
+    border-radius: var(--border-radius-md);
 }
 
 .slider:before {
     position: absolute;
     content: '';
-    height: 21px;
-    width: 21px;
-    left: 2px;
-    bottom: 2px;
+    height: var(--switch-thumb-size);
+    width: var(--switch-thumb-size);
+    left: var(--switch-thumb-offset);
+    bottom: var(--switch-thumb-offset);
     background-color: var(--md-sys-color-primary);
-    transition: 0.4s;
-    border-radius: 50%;
+    transition: var(--transition-slow);
+    border-radius: var(--border-radius-circle);
 }
 
 input:checked+.slider {
@@ -109,11 +236,165 @@ input:checked+.slider {
 }
 
 input:checked+.slider:before {
-    transform: translateX(24px);
+    transform: translateX(var(--switch-thumb-translate));
 }
 
 /* Material Icon Styling */
-.material-icons {
-    font-size: 24px;
+.material-symbols-outlined {
+    font-size: var(--font-size-icon);
     color: var(--md-sys-color-on-surface);
+}
+
+/* ============================================
+   SETTINGS PANEL
+   ============================================ */
+
+/* Settings Panel */
+.settings-panel {
+    position: fixed;
+    top: 0;
+    right: calc(-1 * var(--settings-panel-width));
+    width: var(--settings-panel-width);
+    height: 100vh;
+    background-color: var(--md-sys-color-surface);
+    box-shadow: var(--shadow-panel);
+    transition: right var(--transition-medium) var(--transition-easing-emphasized);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-panel.open {
+    right: 0;
+}
+
+/* Settings Header */
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xl) var(--spacing-xxl);
+    border-bottom: var(--border-width-thin) solid var(--opacity-border-light);
+}
+
+body.dark .settings-header {
+    border-bottom-color: var(--opacity-border-light);
+}
+
+.settings-header h2 {
+    margin: 0;
+    font-size: var(--font-size-heading);
+    font-weight: var(--font-weight-medium);
+    color: var(--md-sys-color-on-surface);
+}
+
+/* Settings Content */
+.settings-content {
+    padding: var(--spacing-xxl);
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Setting Item */
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.setting-item label {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    color: var(--md-sys-color-on-surface);
+    letter-spacing: var(--letter-spacing-normal);
+}
+
+/* Input Field */
+.setting-item input[type="text"] {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-body);
+    font-family: var(--font-family-primary);
+    color: var(--md-sys-color-on-surface);
+    background-color: var(--md-sys-color-background);
+    border: var(--border-width-thin) solid var(--opacity-border-light);
+    border-radius: var(--border-radius-sm);
+    outline: none;
+    transition: border-color var(--transition-fast), background-color var(--transition-medium);
+    box-sizing: border-box;
+}
+
+body.dark .setting-item input[type="text"] {
+    border-color: var(--opacity-border-light);
+}
+
+.setting-item input[type="text"]:focus {
+    border-color: var(--md-sys-color-primary);
+    border-width: var(--border-width-thick);
+    padding: 11px 15px;
+}
+
+.setting-item input[type="text"]::placeholder {
+    color: var(--opacity-placeholder-light);
+}
+
+body.dark .setting-item input[type="text"]::placeholder {
+    color: var(--opacity-placeholder-light);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+/* Primary Button */
+.primary-btn {
+    padding: var(--spacing-md) var(--spacing-xxl);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    font-family: var(--font-family-primary);
+    letter-spacing: var(--letter-spacing-normal);
+    color: var(--md-sys-color-on-primary);
+    background-color: var(--md-sys-color-primary);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+    align-self: flex-start;
+}
+
+.primary-btn:hover {
+    background-color: var(--hover-primary-bg);
+    box-shadow: var(--shadow-hover);
+}
+
+body.dark .primary-btn:hover {
+    background-color: var(--hover-primary-bg);
+    box-shadow: var(--shadow-hover);
+}
+
+.primary-btn:active {
+    box-shadow: var(--shadow-active);
+}
+
+/* ============================================
+   OVERLAY
+   ============================================ */
+
+/* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--opacity-overlay);
+    opacity: var(--opacity-hidden);
+    visibility: hidden;
+    transition: opacity var(--transition-medium), visibility var(--transition-medium);
+    z-index: 999;
+}
+
+.overlay.active {
+    opacity: var(--opacity-visible);
+    visibility: visible;
 }

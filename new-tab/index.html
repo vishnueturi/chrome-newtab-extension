@@ -5,18 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hello World</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   </head>
   <body>
     <div id="app">
-      <div id="hello-world">Hello Vishnu!</div>
+      <div id="header">
+        <button id="customize-btn" class="icon-btn" title="Customize greeting">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
+        <div id="theme-toggle">
+          <label class="switch">
+            <input type="checkbox" id="toggle-theme" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div id="hello-world"></div>
       <div id="date"></div>
-      <div id="theme-toggle">
-        <label class="switch">
-          <input type="checkbox" id="toggle-theme" />
-          <span class="slider"></span>
-        </label>
+    </div>
+    
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="settings-panel">
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button id="close-panel" class="icon-btn" title="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="settings-content">
+        <div class="setting-item">
+          <label for="greeting-input">Greeting Message</label>
+          <input 
+            type="text" 
+            id="greeting-input" 
+            placeholder="Enter your greeting..." 
+            maxlength="50"
+          />
+          <button id="save-greeting" class="primary-btn">Save</button>
+        </div>
       </div>
     </div>
+    
+    <!-- Overlay -->
+    <div id="overlay" class="overlay"></div>
+    
     <script src="script.js"></script>
   </body>
 </html>
