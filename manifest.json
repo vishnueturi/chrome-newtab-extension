@@ -1,0 +1,15 @@
+{
+    "manifest_version": 3,
+    "name": "Hello World",
+    "version": "1.0",
+    "description": "A fun new tab extension that displays 'Hello World!' with a dynamic theme and date.",
+    "icons": {},
+    "permissions": ["storage"],
+    "chrome_url_overrides": {
+      "newtab": "new-tab/index.html"
+    },
+    "host_permissions": [],
+    "background": {
+      "service_worker": "background/background.js"
+    }
+}

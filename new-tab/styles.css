@@ -1,0 +1,119 @@
+/* Material 3 Design Variables */
+:root {
+    --md-sys-color-primary: #6200ee;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-secondary: #03dac6;
+    --md-sys-color-on-secondary: #000000;
+    --md-sys-color-background: #f5f5f5;
+    --md-sys-color-on-background: #000000;
+    --md-sys-color-surface: #ffffff;
+    --md-sys-color-on-surface: #000000;
+    --md-sys-color-error: #b00020;
+    --md-sys-color-on-error: #ffffff;
+}
+
+/* Dark Theme Variables with Tinted Colors */
+body.dark {
+    --md-sys-color-primary: #bb86fc;
+    --md-sys-color-on-primary: #000000;
+    --md-sys-color-secondary: #03dac6;
+    --md-sys-color-on-secondary: #000000;
+    --md-sys-color-background: #1e1e1e; /* Tinted background color */
+    --md-sys-color-on-background: #e0e0e0; /* Tinted text color */
+    --md-sys-color-surface: #2c2c2c; /* Tinted surface color */
+    --md-sys-color-on-surface: #ffffff; /* Tinted text on surface */
+    --md-sys-color-error: #cf6679;
+    --md-sys-color-on-error: #000000;
+}
+
+/* Apply Theme Colors */
+body {
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
+    font-family: 'Roboto', sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Hello World Text */
+#hello-world {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--md-sys-color-primary);
+    text-align: center;
+}
+
+/* Date Display */
+#date {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 1rem;
+    color: var(--md-sys-color-on-surface);
+}
+
+/* Toggle Switch */
+#theme-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 25px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--md-sys-color-surface);
+    transition: 0.4s;
+    border-radius: 25px;
+}
+
+.slider:before {
+    position: absolute;
+    content: '';
+    height: 21px;
+    width: 21px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--md-sys-color-primary);
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: var(--md-sys-color-primary);
+}
+
+input:checked+.slider:before {
+    transform: translateX(24px);
+}
+
+/* Material Icon Styling */
+.material-icons {
+    font-size: 24px;
+    color: var(--md-sys-color-on-surface);
+}
