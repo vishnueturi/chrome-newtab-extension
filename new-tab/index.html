@@ -13,12 +13,6 @@
         <button id="customize-btn" class="icon-btn" title="Customize greeting">
           <span class="material-symbols-outlined">settings</span>
         </button>
-        <div id="theme-toggle">
-          <label class="switch">
-            <input type="checkbox" id="toggle-theme" />
-            <span class="slider"></span>
-          </label>
-        </div>
       </div>
       <div id="hello-world"></div>
       <div id="date"></div>
@@ -33,6 +27,17 @@
         </button>
       </div>
       <div class="settings-content">
+        <div class="setting-item">
+          <label for="toggle-theme">Theme</label>
+          <div class="theme-toggle-container">
+            <span class="theme-label">Light</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-theme" />
+              <span class="slider"></span>
+            </label>
+            <span class="theme-label">Dark</span>
+          </div>
+        </div>
         <div class="setting-item">
           <label for="greeting-input">Greeting Message</label>
           <input 

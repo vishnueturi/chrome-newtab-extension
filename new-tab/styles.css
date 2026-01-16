@@ -189,11 +189,6 @@ body.dark .icon-btn:hover {
 }
 
 /* Toggle Switch */
-#theme-toggle {
-    display: flex;
-    align-items: center;
-}
-
 .switch {
     position: relative;
     display: inline-block;
@@ -300,6 +295,7 @@ body.dark .settings-header {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
 }
 
 .setting-item label {
@@ -307,6 +303,19 @@ body.dark .settings-header {
     font-weight: var(--font-weight-medium);
     color: var(--md-sys-color-on-surface);
     letter-spacing: var(--letter-spacing-normal);
+}
+
+/* Theme Toggle Container */
+.theme-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.theme-label {
+    font-size: var(--font-size-small);
+    color: var(--md-sys-color-on-surface);
+    min-width: 40px;
 }
 
 /* Input Field */
