@@ -21,7 +21,8 @@
     --hover-icon-bg: rgba(25, 118, 210, 0.08);
     
     /* ===== Typography ===== */
-    --font-family-primary: 'Roboto', sans-serif;
+    --font-family-primary: 'Google Sans Text', sans-serif;
+    --font-family-heading: 'Google Sans', sans-serif;
     --font-size-hero: 3rem;
     --font-size-heading: 1.5rem;
     --font-size-body: 1rem;
@@ -128,6 +129,7 @@ body {
 
 /* Hello World Text */
 #hello-world {
+    font-family: var(--font-family-heading);
     font-size: var(--font-size-hero);
     font-weight: var(--font-weight-bold);
     color: var(--md-sys-color-primary);
@@ -252,6 +254,7 @@ body.dark .settings-header {
 
 .settings-header h2 {
     margin: 0;
+    font-family: var(--font-family-heading);
     font-size: var(--font-size-heading);
     font-weight: var(--font-weight-medium);
     color: var(--md-sys-color-on-surface);
@@ -286,6 +289,7 @@ body.dark .settings-header {
 
 .setting-item label {
     font-size: var(--font-size-small);
+    font-family: var(--font-family-heading);
     font-weight: var(--font-weight-medium);
     color: var(--md-sys-color-on-surface);
     letter-spacing: var(--letter-spacing-normal);
@@ -298,7 +302,7 @@ body.dark .settings-header {
     width: 100%;
     padding: var(--spacing-md) var(--spacing-lg);
     font-size: var(--font-size-body);
-    font-family: var(--font-family-primary);
+    font-family: var(--font-family-heading);
     color: var(--md-sys-color-on-surface);
     background-color: var(--md-sys-color-background);
     border: var(--border-width-thin) solid var(--opacity-border-light);
@@ -335,7 +339,7 @@ body.dark .setting-item input[type="text"]::placeholder {
     padding: var(--spacing-md) var(--spacing-xxl);
     font-size: var(--font-size-small);
     font-weight: var(--font-weight-medium);
-    font-family: var(--font-family-primary);
+    font-family: var(--font-family-heading);
     letter-spacing: var(--letter-spacing-normal);
     color: var(--md-sys-color-on-primary);
     background-color: var(--md-sys-color-primary);
