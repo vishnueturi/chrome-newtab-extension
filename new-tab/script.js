@@ -10,7 +10,9 @@ function initializeTheme() {
 
     const initialTheme = savedTheme || systemTheme; // Default to saved or system theme
     document.body.classList.toggle("dark", initialTheme === "dark");
-    document.getElementById("toggle-theme").checked = initialTheme === "dark";
+    
+    // Update theme toggle button icon
+    updateThemeIcon();
 
     // Update localStorage with system theme if no saved preference exists
     if (!savedTheme) {
@@ -18,10 +20,22 @@ function initializeTheme() {
     }
 }
 
+// Update theme icon based on current theme
+function updateThemeIcon() {
+    const themeToggleBtn = document.getElementById("theme-toggle-btn");
+    if (themeToggleBtn) {
+        const icon = themeToggleBtn.querySelector(".material-symbols-outlined");
+        const isDarkMode = document.body.classList.contains("dark");
+        // Show sun icon in dark mode, moon icon in light mode
+        icon.textContent = isDarkMode ? "light_mode" : "dark_mode";
+    }
+}
+
 // Toggle theme
 function toggleTheme() {
     const isDarkMode = document.body.classList.toggle("dark");
     localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    updateThemeIcon();
 }
 
 // Initialize greeting
@@ -100,8 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeGreeting();
     initializeDate();
 
-    const themeToggle = document.getElementById("toggle-theme");
-    themeToggle.addEventListener("change", toggleTheme);
+    const themeToggleBtn = document.getElementById("theme-toggle-btn");
+    themeToggleBtn.addEventListener("click", toggleTheme);
     
     const customizeBtn = document.getElementById("customize-btn");
     customizeBtn.addEventListener("click", openSettingsPanel);

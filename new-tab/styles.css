@@ -44,11 +44,7 @@
     /* ===== Sizing ===== */
     --icon-size: 24px;
     --icon-btn-padding: 8px;
-    --switch-width: 50px;
-    --switch-height: 25px;
-    --switch-thumb-size: 21px;
-    --switch-thumb-offset: 2px;
-    --switch-thumb-translate: 24px;
+    --theme-toggle-size: 48px;
     --settings-panel-width: 360px;
     
     /* ===== Border Radius ===== */
@@ -188,50 +184,28 @@ body.dark .icon-btn:hover {
     transition: color var(--transition-medium);
 }
 
-/* Toggle Switch */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: var(--switch-width);
-    height: var(--switch-height);
-}
-
-.switch input {
-    opacity: var(--opacity-hidden);
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--md-sys-color-surface);
-    transition: var(--transition-slow);
-    border-radius: var(--border-radius-md);
-}
-
-.slider:before {
-    position: absolute;
-    content: '';
-    height: var(--switch-thumb-size);
-    width: var(--switch-thumb-size);
-    left: var(--switch-thumb-offset);
-    bottom: var(--switch-thumb-offset);
-    background-color: var(--md-sys-color-primary);
-    transition: var(--transition-slow);
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    width: var(--theme-toggle-size);
+    height: var(--theme-toggle-size);
     border-radius: var(--border-radius-circle);
+    border: var(--border-width-thin) solid var(--opacity-border-light);
+    background-color: var(--md-sys-color-surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-input:checked+.slider {
-    background-color: var(--md-sys-color-primary);
+.theme-toggle-btn:hover {
+    background-color: var(--hover-icon-bg);
 }
 
-input:checked+.slider:before {
-    transform: translateX(var(--switch-thumb-translate));
+.theme-toggle-btn .material-symbols-outlined {
+    font-size: var(--icon-size);
+    color: var(--md-sys-color-on-surface);
+    transition: color var(--transition-medium);
 }
 
 /* Material Icon Styling */
@@ -317,18 +291,7 @@ body.dark .settings-header {
     letter-spacing: var(--letter-spacing-normal);
 }
 
-/* Theme Toggle Container */
-.theme-toggle-container {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-}
 
-.theme-label {
-    font-size: var(--font-size-small);
-    color: var(--md-sys-color-on-surface);
-    min-width: 40px;
-}
 
 /* Input Field */
 .setting-item input[type="text"] {
