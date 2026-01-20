@@ -140,7 +140,7 @@ function initializeAppsMenu() {
         const link = document.createElement('a');
         link.className = 'app-item';
         link.href = app.url;
-        link.target = '_blank'; // Open in new tab
+        link.target = '_self'; // Open in new tab
         link.title = app.name;
         
         const img = document.createElement('img');
@@ -186,12 +186,36 @@ function closeAppsMenu() {
     }
 }
 
+// Search functionality
+function initializeSearch() {
+    const searchInput = document.getElementById("search-input");
+    
+    function performSearch(query) {
+        if (!query.trim()) return;
+        
+        const url = new URL('https://www.google.com/search');
+        url.searchParams.set('q', query);
+        
+        window.open(url.toString(), '_self');
+    }
+    
+    // Enter key search
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch(searchInput.value);
+            }
+        });
+    }
+}
+
 // Main initialization
 document.addEventListener("DOMContentLoaded", () => {
     initializeTheme();
     initializeGreeting();
     initializeDate();
     initializeAppsMenu();
+    initializeSearch();
 
     const themeToggleBtn = document.getElementById("theme-toggle-btn");
     themeToggleBtn.addEventListener("click", toggleTheme);
