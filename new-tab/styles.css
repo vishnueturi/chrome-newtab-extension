@@ -16,6 +16,13 @@
     --md-sys-color-error: #b00020;
     --md-sys-color-on-error: #ffffff;
     
+    /* Surface Containers (Light) */
+    --md-sys-color-surface-container-lowest: #ffffff;
+    --md-sys-color-surface-container-low: #f7f9fb;
+    --md-sys-color-surface-container: #f3f5f7;
+    --md-sys-color-surface-container-high: #eceef0;
+    --md-sys-color-surface-container-highest: #e6e8eb;
+    
     /* Hover State Colors (Light Theme) */
     --hover-primary-bg: #42A5F5;
     --hover-icon-bg: rgba(25, 118, 210, 0.08);
@@ -65,6 +72,11 @@
     --shadow-hover: 0 2px 8px rgba(25, 118, 210, 0.3);
     --shadow-active: 0 1px 4px rgba(25, 118, 210, 0.4);
     
+    /* ===== Elevations ===== */
+    --md-elevation-level-1: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --md-elevation-level-2: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+    --md-elevation-level-3: 0px 1px 3px 0px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
+    
     /* ===== Opacity Values ===== */
     --opacity-border-light: rgba(0, 0, 0, 0.12);
     --opacity-placeholder-light: rgba(0, 0, 0, 0.38);
@@ -90,6 +102,13 @@ body.dark {
     --md-sys-color-on-surface: #ffffff;
     --md-sys-color-error: #cf6679;
     --md-sys-color-on-error: #000000;
+    
+    /* Surface Containers (Dark) */
+    --md-sys-color-surface-container-lowest: #0f0f0f;
+    --md-sys-color-surface-container-low: #1d1b20; 
+    --md-sys-color-surface-container: #212121;
+    --md-sys-color-surface-container-high: #2b2930;
+    --md-sys-color-surface-container-highest: #36343b;
     
     /* Hover State Colors (Dark Theme) */
     --hover-primary-bg: #BBDEFB;
@@ -157,6 +176,108 @@ body {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
+    z-index: 1001; /* Ensure header is above other content */
+}
+
+/* Apps Menu Container */
+.apps-menu-container {
+    position: relative;
+}
+
+/* Apps Dropdown */
+.apps-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: -10px; /* Align roughly with the button center */
+    width: 338px; /* Standard width for Google apps menu */
+    max-height: 400px;
+    background-color: var(--md-sys-color-surface-container-highest); /* M3 Card Background */
+    border-radius: 12px; /* M3 Card Corner Radius */
+    box-shadow: var(--md-elevation-level-1); /* M3 Card Elevation */
+    padding: 16px;
+    display: none; /* Hidden by default */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px; /* Space between items */
+    overflow-y: auto;
+    z-index: 2000;
+    opacity: 0;
+    transform: scale(0.9);
+    transform-origin: top right;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.apps-dropdown.active {
+    display: grid;
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Dark Mode Background for Dropdown */
+body.dark .apps-dropdown {
+    background-color: var(--md-sys-color-surface-container-high);
+    box-shadow: var(--md-elevation-level-2); /* Slightly higher elevation for dark mode visibility */
+}
+
+/* Individual App Item */
+.app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+    text-decoration: none;
+    color: var(--md-sys-color-on-surface);
+    border-radius: 16px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.app-item:hover {
+    background-color: rgba(60, 64, 67, 0.1); /* Light hover overlay */
+}
+
+body.dark .app-item:hover {
+    background-color: rgba(232, 234, 237, 0.1); /* Dark hover overlay */
+}
+
+/* App Icon */
+.app-item img {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+    object-fit: contain;
+}
+
+/* App Name */
+.app-item span {
+    font-family: 'Google Sans Text', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    text-align: center;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+}
+
+/* Scrollbar Styles for Dropdown */
+.apps-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.apps-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.apps-dropdown::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+body.dark .apps-dropdown::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Customize Button */
