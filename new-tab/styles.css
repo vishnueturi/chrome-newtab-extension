@@ -238,13 +238,20 @@ body.dark .search-input {
 
 /* Header Container */
 #header {
-    position: absolute;
+    position: fixed;
     top: var(--spacing-xxxl);
     right: var(--spacing-xxxl);
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    z-index: 1001; /* Ensure header is above other content */
+    z-index: 2001; /* Ensure header is above settings panel and overlay */
+    transition: opacity var(--transition-medium) var(--transition-easing-emphasized);
+}
+
+/* Hide header when settings panel is open */
+#header.panel-open {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Apps Menu Container */

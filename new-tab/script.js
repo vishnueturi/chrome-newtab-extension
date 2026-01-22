@@ -58,6 +58,7 @@ function openSettingsPanel() {
     const panel = document.getElementById("settings-panel");
     const overlay = document.getElementById("overlay");
     const greetingInput = document.getElementById("greeting-input");
+    const header = document.getElementById("header");
     
     // Close apps menu if open
     closeAppsMenu();
@@ -69,6 +70,7 @@ function openSettingsPanel() {
     // Open panel and overlay
     panel.classList.add("open");
     overlay.classList.add("active");
+    header.classList.add("panel-open");
     
     // Focus on input
     setTimeout(() => greetingInput.focus(), 300);
@@ -78,9 +80,11 @@ function openSettingsPanel() {
 function closeSettingsPanel() {
     const panel = document.getElementById("settings-panel");
     const overlay = document.getElementById("overlay");
+    const header = document.getElementById("header");
     
     panel.classList.remove("open");
     overlay.classList.remove("active");
+    header.classList.remove("panel-open");
 }
 
 // Save greeting from panel
