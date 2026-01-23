@@ -20,9 +20,14 @@
             <!-- Apps will be injected by JavaScript -->
           </div>
         </div>
-        <button id="customize-btn" class="icon-btn" title="Customize greeting">
-          <span class="material-symbols-outlined">settings</span>
-        </button>
+        <div class="header-controls">
+          <button id="theme-toggle-btn" class="theme-toggle-btn" title="">
+            <span class="material-symbols-outlined">light_mode</span>
+          </button>
+          <button id="customize-btn" class="icon-btn" title="Customize greeting">
+            <span class="material-symbols-outlined">settings</span>
+          </button>
+        </div>
       </div>
       <div id="hello-world"></div>
       
@@ -52,12 +57,6 @@
         </button>
       </div>
       <div class="settings-content">
-        <div class="setting-item setting-row">
-          <label>Theme</label>
-          <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle theme">
-            <span class="material-symbols-outlined">light_mode</span>
-          </button>
-        </div>
         <div class="setting-item setting-column">
           <label for="greeting-input">Greeting Message</label>
           <input 

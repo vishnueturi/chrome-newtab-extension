@@ -21,13 +21,35 @@ function initializeTheme() {
 }
 
 // Update theme icon based on current theme
-function updateThemeIcon() {
+function updateThemeIcon(animate = false) {
     const themeToggleBtn = document.getElementById("theme-toggle-btn");
     if (themeToggleBtn) {
         const icon = themeToggleBtn.querySelector(".material-symbols-outlined");
         const isDarkMode = document.body.classList.contains("dark");
+        
+        if (animate) {
+            // Remove all animation classes first
+            icon.classList.remove("slide-in-from-top", "slide-out-to-top", "slide-in-from-bottom", "slide-out-to-bottom");
+            
+            // Add appropriate animation based on current theme
+            if (isDarkMode) {
+                // Switching to dark: moon comes from top (previous sun goes out to top)
+                icon.classList.add("slide-in-from-top");
+            } else {
+                // Switching to light: sun comes from bottom (previous moon goes out to bottom)
+                icon.classList.add("slide-in-from-bottom");
+            }
+            
+            // Remove animation class after it completes so it can be triggered again
+            setTimeout(() => {
+                icon.classList.remove("slide-in-from-top", "slide-out-to-top", "slide-in-from-bottom", "slide-out-to-bottom");
+            }, 500);
+        }
+        
         // Show sun icon in dark mode, moon icon in light mode
         icon.textContent = isDarkMode ? "light_mode" : "dark_mode";
+        // Update title attribute based on current theme
+        themeToggleBtn.title = isDarkMode ? "Switch to light mode" : "Switch to dark mode";
     }
 }
 
@@ -35,7 +57,7 @@ function updateThemeIcon() {
 function toggleTheme() {
     const isDarkMode = document.body.classList.toggle("dark");
     localStorage.setItem("theme", isDarkMode ? "dark" : "light");
-    updateThemeIcon();
+    updateThemeIcon(true); // Pass true to trigger animation
 }
 
 // Initialize greeting
