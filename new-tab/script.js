@@ -124,15 +124,49 @@ function saveGreeting() {
 // Initialize Date
 function initializeDate() {
     const dateElement = document.getElementById("date");
+    let showWeekCounter = true;
+    
+    function calculateWeekNumber(now) {
+        const date = new Date(now);
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() + 4 - (date.getDay() || 7));
+        const yearStart = new Date(date.getFullYear(), 0, 1);
+        return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    }
+    
+    function calculateDayNumber(now) {
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        return Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000)) + 1;
+    }
+    
+    function updateDateDisplay() {
+        const now = new Date();
+        
+        if (showWeekCounter) {
+            const weekNumber = calculateWeekNumber(now);
+            dateElement.textContent = `Week ${weekNumber}/52`;
+        } else {
+            const dayNumber = calculateDayNumber(now);
+            dateElement.textContent = `Day ${dayNumber}/365`;
+        }
+    }
 
-    // Use system's locale format for the date
-    const currentDate = new Date().toLocaleDateString();
-    dateElement.textContent = currentDate;
+    updateDateDisplay();
 
-    // Optional: Allow the user to click on the date to refresh it
+    // Toggle between week and day counter on click with animation
     dateElement.addEventListener("click", () => {
-        const refreshedDate = new Date().toLocaleDateString();
-        dateElement.textContent = refreshedDate;
+        dateElement.classList.add("counter-switch");
+        
+        setTimeout(() => {
+            showWeekCounter = !showWeekCounter;
+            updateDateDisplay();
+            dateElement.classList.remove("counter-switch");
+            dateElement.classList.add("counter-switch-in");
+        }, 150);
+        
+        setTimeout(() => {
+            dateElement.classList.remove("counter-switch-in");
+        }, 450);
     });
 }
 

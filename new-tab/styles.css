@@ -691,3 +691,33 @@ body.dark .primary-btn:hover {
     opacity: var(--opacity-visible);
     visibility: visible;
 }
+/* Counter Toggle Animations */
+@keyframes counterFadeOut {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+}
+
+@keyframes counterFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#date.counter-switch {
+    animation: counterFadeOut 0.3s var(--transition-easing-emphasized) forwards;
+}
+
+#date.counter-switch-in {
+    animation: counterFadeIn 0.3s var(--transition-easing-emphasized) forwards;
+}
