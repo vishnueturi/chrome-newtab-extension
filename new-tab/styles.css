@@ -196,7 +196,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* ============================================
@@ -226,6 +226,116 @@ body {
     width: 100%;
     max-width: 584px;
     margin-bottom: var(--spacing-xxxl);
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* Search suggestions dropdown (Chrome URL-bar style) */
+.search-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 368px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: var(--md-sys-color-surface);
+    border: var(--border-width-thin) solid var(--opacity-border-light);
+    border-radius: 12px;
+    box-shadow: var(--md-elevation-level-3);
+    z-index: 500;
+    padding: var(--spacing-sm) 0;
+    display: block;
+}
+
+.search-suggestions[hidden] {
+    display: none !important;
+}
+
+body.dark .search-suggestions {
+    background-color: var(--md-sys-color-surface-container-high);
+    border-color: var(--opacity-border-light);
+}
+
+.search-suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    cursor: pointer;
+    font-size: var(--font-size-body);
+    color: var(--md-sys-color-on-surface);
+    transition: background-color var(--transition-fast);
+    text-align: left;
+    border: none;
+    width: 100%;
+    font-family: inherit;
+}
+
+.search-suggestion-item:hover,
+.search-suggestion-item[aria-selected="true"] {
+    background-color: var(--md-sys-color-surface-container-high);
+}
+
+body.dark .search-suggestion-item:hover,
+body.dark .search-suggestion-item[aria-selected="true"] {
+    background-color: var(--md-sys-color-surface-container-highest);
+}
+
+.search-suggestion-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    object-fit: contain;
+    border-radius: 2px;
+}
+
+.search-suggestion-icon.material-icon {
+    font-size: 20px;
+    color: var(--opacity-placeholder-light);
+}
+
+.search-suggestion-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.search-suggestion-title {
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-suggestion-url {
+    font-size: var(--font-size-small);
+    color: var(--opacity-placeholder-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-suggestions::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+body.dark .search-suggestions::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .search-box {
@@ -265,6 +375,43 @@ body.dark .search-box {
     transition: color var(--transition-medium) var(--transition-easing-emphasized);
 }
 
+.search-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.search-input-ghost {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.search-ghost-completion {
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-body);
+    color: var(--opacity-placeholder-light);
+    white-space: pre;
+}
+
+.search-input-measure {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-body);
+    white-space: pre;
+    left: -9999px;
+}
+
 .search-input {
     flex: 1;
     border: none;
@@ -274,6 +421,7 @@ body.dark .search-box {
     color: var(--md-sys-color-on-surface);
     outline: none;
     padding: 0;
+    min-width: 0;
     transition: color var(--transition-medium) var(--transition-easing-emphasized);
 }
 
@@ -283,6 +431,10 @@ body.dark .search-box {
 
 body.dark .search-input {
     color: var(--md-sys-color-on-surface);
+}
+
+.search-input-wrap.has-ghost .search-input::placeholder {
+    color: transparent;
 }
 
 /* Date Display */
