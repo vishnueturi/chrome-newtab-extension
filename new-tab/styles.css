@@ -89,11 +89,7 @@
     --border-width-thin: 1px;
     --border-width-thick: 2px;
     
-    /* Search (M3-style field + suggestion menu) */
-    --search-field-height: 56px;
-    --search-field-radius: 28px;
-    --search-menu-max-height: min(56vh, 520px);
-    --search-content-max-width: min(960px, 100%);
+    --content-max-width: min(960px, 100%);
 }
 
 /* ===== Dark Theme Overrides ===== */
@@ -238,7 +234,7 @@ body.popup-open #app-main {
     color: var(--md-sys-color-primary);
     text-align: center;
     width: 100%;
-    max-width: var(--search-content-max-width);
+    max-width: var(--content-max-width);
     margin-left: auto;
     margin-right: auto;
     margin-bottom: clamp(var(--spacing-xl), 4vh, var(--spacing-xxxxl));
