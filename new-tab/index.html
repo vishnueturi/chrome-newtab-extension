@@ -3,6 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Chrome keeps omnibox focus on the initial new-tab document; ?nt=1 forces a same-page navigation where in-page focus works. -->
+    <script>
+      (function () {
+        try {
+          if (new URLSearchParams(window.location.search).get("nt") === "1") return;
+          if (sessionStorage.getItem("ntp") === "1") return;
+          if (typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.getURL === "function") {
+            location.replace(chrome.runtime.getURL("new-tab/index.html") + "?nt=1");
+          }
+        } catch (_) {}
+      })();
+    </script>
     <link rel="icon" href="../icons/icon128.png?v=3" type="image/png" />
     <title>New Tab</title>
     <link rel="stylesheet" href="styles.css" />
@@ -18,7 +30,12 @@
           </button>
           <!-- Apps Dropdown -->
           <div id="apps-dropdown" class="apps-dropdown">
-            <!-- Apps will be injected by JavaScript -->
+            <div class="apps-dropdown-header">
+              <!-- Dynamically rendered by JS: normal mode or edit mode -->
+            </div>
+            <div id="apps-grid" class="apps-grid">
+              <!-- Apps injected by JavaScript -->
+            </div>
           </div>
         </div>
         <div class="header-controls">
@@ -30,6 +47,7 @@
           </button>
         </div>
       </div>
+      <div id="app-main">
       <div id="hello-world"></div>
       
       <!-- Search Bar with Suggestions -->
@@ -46,6 +64,7 @@
                 class="search-input" 
                 placeholder="Search Google or type a URL" 
                 autocomplete="off"
+                autofocus
               />
             </div>
           </div>
@@ -54,6 +73,7 @@
       </div>
       
       <div id="date"></div>
+      </div>
     </div>
     
     <!-- Settings Panel -->

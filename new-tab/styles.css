@@ -88,10 +88,17 @@
     /* ===== Border Widths ===== */
     --border-width-thin: 1px;
     --border-width-thick: 2px;
+    
+    /* Search (M3-style field + suggestion menu) */
+    --search-field-height: 56px;
+    --search-field-radius: 28px;
+    --search-menu-max-height: min(56vh, 520px);
+    --search-content-max-width: min(960px, 100%);
 }
 
 /* ===== Dark Theme Overrides ===== */
 body.dark {
+    color-scheme: dark;
     /* Dark Theme Colors - Blue Family */
     --md-sys-color-primary: #90CAF9;
     --md-sys-color-on-primary: #000000;
@@ -177,6 +184,7 @@ body.dark {
    ============================================ */
 
 body {
+    color-scheme: light;
     background-color: var(--md-sys-color-background);
     color: var(--md-sys-color-on-background);
     font-family: var(--font-family-primary);
@@ -193,10 +201,29 @@ body {
 #app {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    align-items: stretch;
     height: 100vh;
     overflow: visible;
+}
+
+/* Main content only — blur/scale here so header + apps dropdown stay sharp (filter on #app would blur descendants). */
+#app-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: clamp(48px, 7vh, 100px) clamp(20px, 4vw, 56px) clamp(64px, 10vh, 120px);
+    transition: transform 0.6s cubic-bezier(0.05, 0.7, 0.1, 1.0), filter 0.6s cubic-bezier(0.05, 0.7, 0.1, 1.0);
+}
+
+body.popup-open #app-main {
+    transform: scale(0.97);
+    filter: blur(2px);
 }
 
 /* ============================================
@@ -210,7 +237,11 @@ body {
     font-weight: var(--font-weight-bold);
     color: var(--md-sys-color-primary);
     text-align: center;
-    margin-bottom: var(--spacing-xxxxl);
+    width: 100%;
+    max-width: var(--search-content-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: clamp(var(--spacing-xl), 4vh, var(--spacing-xxxxl));
     transition: color var(--transition-medium) var(--transition-easing-emphasized);
 }
 
@@ -221,10 +252,12 @@ body {
 #search-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: var(--spacing-lg);
     width: 100%;
-    max-width: 584px;
+    max-width: var(--search-content-max-width);
+    margin-left: auto;
+    margin-right: auto;
     margin-bottom: var(--spacing-xxxl);
 }
 
@@ -233,21 +266,25 @@ body {
     width: 100%;
 }
 
-/* Search suggestions dropdown (Chrome URL-bar style) */
+/* Search suggestions — M3 menu / list surface (tonal elevation, wide readable panel) */
 .search-suggestions {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 8px);
     left: 0;
     right: 0;
-    max-height: 368px;
+    max-height: var(--search-menu-max-height);
     overflow-y: auto;
     overflow-x: hidden;
-    background-color: var(--md-sys-color-surface);
+    background-color: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
     border: var(--border-width-thin) solid var(--opacity-border-light);
-    border-radius: 12px;
-    box-shadow: var(--md-elevation-level-3);
+    border-radius: 16px;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.08),
+        0 2px 6px rgba(0, 0, 0, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.14);
     z-index: 500;
-    padding: var(--spacing-sm) 0;
+    padding: 8px 0;
     display: block;
 }
 
@@ -258,13 +295,20 @@ body {
 body.dark .search-suggestions {
     background-color: var(--md-sys-color-surface-container-high);
     border-color: var(--opacity-border-light);
+    color: var(--md-sys-color-on-surface);
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(0, 0, 0, 0.35),
+        0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
 .search-suggestion-item {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg);
+    gap: var(--spacing-lg);
+    padding: 14px 20px;
+    min-height: 56px;
+    box-sizing: border-box;
     cursor: pointer;
     font-size: var(--font-size-body);
     color: var(--md-sys-color-on-surface);
@@ -273,6 +317,27 @@ body.dark .search-suggestions {
     border: none;
     width: 100%;
     font-family: inherit;
+    margin: 0;
+    /* Reset <button> UA styles — avoids light “button face” per row (looked like
+       all items selected) and fixes dark-mode text vs wrong background contrast. */
+    background-color: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.search-suggestion-item:focus {
+    outline: none;
+}
+
+.search-suggestion-item:focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: -2px;
+    z-index: 1;
+    position: relative;
+}
+
+.search-suggestion-item:not(:last-child) {
+    border-bottom: 1px solid var(--opacity-border-light);
 }
 
 .search-suggestion-item:hover,
@@ -286,15 +351,15 @@ body.dark .search-suggestion-item[aria-selected="true"] {
 }
 
 .search-suggestion-icon {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
     object-fit: contain;
-    border-radius: 2px;
+    border-radius: 4px;
 }
 
 .search-suggestion-icon.material-icon {
-    font-size: 20px;
+    font-size: 24px;
     color: var(--opacity-placeholder-light);
 }
 
@@ -303,7 +368,7 @@ body.dark .search-suggestion-item[aria-selected="true"] {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
 .search-suggestion-title {
@@ -322,32 +387,36 @@ body.dark .search-suggestion-item[aria-selected="true"] {
 }
 
 .search-suggestions::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 .search-suggestions::-webkit-scrollbar-track {
     background: transparent;
+    margin: 8px 0;
 }
 
 .search-suggestions::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
 body.dark .search-suggestions::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.32);
 }
 
 .search-box {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    padding: 0 var(--spacing-lg);
+    padding: 0 24px;
     width: 100%;
-    height: 48px;
+    height: var(--search-field-height);
+    min-height: var(--search-field-height);
     background-color: var(--md-sys-color-surface);
     border: var(--border-width-thin) solid var(--opacity-border-light);
-    border-radius: 24px;
+    border-radius: var(--search-field-radius);
     box-shadow: var(--md-elevation-level-1);
     transition: 
         box-shadow var(--transition-fast) var(--transition-easing-emphasized),
@@ -370,7 +439,7 @@ body.dark .search-box {
 
 .search-icon {
     color: var(--opacity-placeholder-light);
-    font-size: 20px;
+    font-size: 24px;
     flex-shrink: 0;
     transition: color var(--transition-medium) var(--transition-easing-emphasized);
 }
@@ -485,35 +554,172 @@ body.dark .search-input {
 /* Apps Dropdown */
 .apps-dropdown {
     position: absolute;
-    top: calc(100% + 10px);
-    right: -10px; /* Align roughly with the button center */
-    width: 338px; /* Standard width for Google apps menu */
-    max-height: 400px;
-    background-color: var(--md-sys-color-surface-container-highest); /* M3 Card Background */
-    border-radius: 12px; /* M3 Card Corner Radius */
-    box-shadow: var(--md-elevation-level-1); /* M3 Card Elevation */
-    padding: 16px;
-    display: none; /* Hidden by default */
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px; /* Space between items */
-    overflow-y: auto;
+    top: calc(100% + 12px);
+    right: 0px;
+    width: 360px;
+    max-height: 500px;
+    background-color: rgba(243, 245, 247, 0.85); /* Glassy M3 Surface Container */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 28px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    padding: 12px 6px 16px 6px;
+    display: none;
+    flex-direction: column;
     z-index: 2000;
     opacity: 0;
-    transform: scale(0.9);
+    visibility: hidden;
+    transform: scale(0.9) translateY(-10px);
     transform-origin: top right;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: 
+        opacity 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0), 
+        transform 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0),
+        visibility 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0);
 }
 
 .apps-dropdown.active {
-    display: grid;
+    display: flex;
     opacity: 1;
-    transform: scale(1);
+    visibility: visible;
+    transform: scale(1) translateY(0);
 }
 
 /* Dark Mode Background for Dropdown */
 body.dark .apps-dropdown {
-    background-color: var(--md-sys-color-surface-container-high);
-    box-shadow: var(--md-elevation-level-2); /* Slightly higher elevation for dark mode visibility */
+    background-color: rgba(33, 33, 33, 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.apps-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px 12px 14px;
+    min-height: 52px;
+    gap: 8px;
+}
+
+/* ---- Normal mode header title ---- */
+.apps-header-title {
+    font-family: var(--font-family-heading);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    flex: 1;
+    text-align: center;
+    transition: color var(--transition-medium) var(--transition-easing-emphasized);
+}
+
+/* Normal mode: title left-aligned, edit btn right */
+.apps-dropdown-header:not(:has(.apps-text-btn)) .apps-header-title {
+    text-align: left;
+    padding-left: 6px;
+}
+
+/* Edit icon button */
+.edit-btn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background-color: var(--md-sys-color-surface-container-low) !important;
+    transition:
+        background-color var(--transition-fast) var(--transition-easing-emphasized),
+        color var(--transition-fast) var(--transition-easing-emphasized) !important;
+}
+
+.edit-btn:hover {
+    background-color: var(--md-sys-color-surface-container-highest) !important;
+}
+
+/* Active / edit mode state for pencil button */
+.edit-btn.edit-btn-active {
+    background-color: var(--md-sys-color-primary) !important;
+}
+
+.edit-btn.edit-btn-active .material-symbols-outlined {
+    color: var(--md-sys-color-on-primary) !important;
+}
+
+/* ---- Edit mode: Cancel (text btn) ---- */
+.apps-text-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-family: var(--font-family-heading);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    transition:
+        background-color var(--transition-fast) var(--transition-easing-emphasized),
+        color var(--transition-medium) var(--transition-easing-emphasized);
+    white-space: nowrap;
+}
+
+.apps-text-btn:hover {
+    background-color: var(--hover-icon-bg);
+}
+
+/* ---- Edit mode: Done (filled btn) ---- */
+.apps-filled-btn {
+    flex-shrink: 0;
+    background-color: var(--md-sys-color-primary);
+    border: none;
+    cursor: pointer;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-family: var(--font-family-heading);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--md-sys-color-on-primary);
+    box-shadow: var(--md-elevation-level-1);
+    transition:
+        background-color var(--transition-fast) var(--transition-easing-emphasized),
+        box-shadow var(--transition-fast) var(--transition-easing-emphasized),
+        color var(--transition-medium) var(--transition-easing-emphasized);
+    white-space: nowrap;
+}
+
+.apps-filled-btn:hover {
+    background-color: var(--hover-primary-bg);
+    box-shadow: var(--md-elevation-level-2);
+}
+
+.apps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 10px;
+    max-height: 380px;
+}
+
+/* Custom Scrollbar for Chrome */
+.apps-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.apps-grid::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 10px 0;
+}
+
+.apps-grid::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 10px;
+}
+
+.apps-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+body.dark .apps-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 /* Individual App Item */
@@ -522,34 +728,49 @@ body.dark .apps-dropdown {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 12px 0;
+    padding: 12px 4px;
     text-decoration: none;
     color: var(--md-sys-color-on-surface);
     border-radius: 16px;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
 }
 
 .app-item:hover {
-    background-color: rgba(60, 64, 67, 0.1); /* Light hover overlay */
+    background-color: rgba(60, 64, 67, 0.08); /* M3 Hover state */
 }
 
 body.dark .app-item:hover {
-    background-color: rgba(232, 234, 237, 0.1); /* Dark hover overlay */
+    background-color: rgba(232, 234, 237, 0.08);
 }
 
-/* App Icon */
+/* App Icon — inside .app-icon-container, margin handled by container */
 .app-item img {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 8px;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0;
     object-fit: contain;
+}
+
+.app-icon-initial {
+    width: 44px;
+    height: 44px;
+    background-color: #1a73e8; /* Google Account blue */
+    color: white;
+    font-family: var(--font-family-heading);
+    font-size: 1.25rem;
+    font-weight: 500;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
 }
 
 /* App Name */
 .app-item span {
     font-family: 'Google Sans Text', sans-serif;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: var(--md-sys-color-on-surface);
     text-align: center;
@@ -557,25 +778,151 @@ body.dark .app-item:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 90%;
+    max-width: 100%;
 }
 
-/* Scrollbar Styles for Dropdown */
-.apps-dropdown::-webkit-scrollbar {
-    width: 8px;
+/* ---- Drag-and-Drop Grid ---- */
+.apps-drag-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    width: 100%;
 }
 
-.apps-dropdown::-webkit-scrollbar-track {
-    background: transparent;
+/* Draggable item base */
+.draggable-app-item {
+    cursor: grab;
+    user-select: none;
+    transition:
+        transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.apps-dropdown::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
+.draggable-app-item:active {
+    cursor: grabbing;
 }
 
-body.dark .apps-dropdown::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.2);
+/* Dragging state: scale up + elevation */
+.draggable-app-item.dragging {
+    transform: scale(1.05);
+    box-shadow: var(--md-elevation-level-3);
+    z-index: 10;
+    border-radius: 16px;
+    cursor: grabbing;
+}
+
+/* Drop target highlight */
+.draggable-app-item.drag-over {
+    background-color: var(--hover-icon-bg);
+    border-radius: 16px;
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: -2px;
+    transform: scale(1.03);
+}
+
+body.dark .draggable-app-item.drag-over {
+    background-color: var(--hover-icon-bg);
+}
+
+/* Touch floating clone */
+.touch-drag-clone {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.85;
+    transform: scale(1.1);
+    box-shadow: var(--md-elevation-level-3);
+    border-radius: 16px;
+    background-color: var(--md-sys-color-surface-container);
+    transition: none;
+}
+
+/* ---- More Apps Section (edit mode) ---- */
+.apps-more-section {
+    width: 100%;
+    margin-top: 12px;
+    border-top: 1px solid var(--opacity-border-light);
+    padding-top: 12px;
+}
+
+body.dark .apps-more-section {
+    border-top-color: var(--opacity-border-light);
+}
+
+.apps-more-label {
+    font-family: var(--font-family-heading);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    opacity: 0.6;
+    padding: 4px 8px 8px 8px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.apps-more-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+}
+
+/* More-apps items: click to add to favorites */
+.more-app-item {
+    cursor: pointer;
+    opacity: 0.75;
+    transition:
+        opacity 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.15s ease;
+    position: relative;
+}
+
+.more-app-item::after {
+    content: '+';
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--md-sys-color-primary);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.more-app-item:hover {
+    opacity: 1;
+    background-color: rgba(60, 64, 67, 0.08);
+    border-radius: 16px;
+}
+
+.more-app-item:hover::after {
+    opacity: 0.8;
+}
+
+body.dark .more-app-item:hover {
+    background-color: rgba(232, 234, 237, 0.08);
+}
+
+/* ---- Edit mode grid area ---- */
+.apps-grid.edit-mode {
+    overflow-x: hidden;
+}
+
+/* Fix for Material Symbols not showing in some buttons */
+.icon-btn .material-symbols-outlined,
+.app-remove-badge .material-symbols-outlined,
+.app-icon-add-placeholder .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
 }
 
 /* Customize Button */
@@ -668,12 +1015,14 @@ body.dark .theme-toggle-btn:hover {
     right: calc(-1 * var(--settings-panel-width));
     width: var(--settings-panel-width);
     height: 100vh;
-    background-color: var(--md-sys-color-surface);
+    background-color: rgba(255, 255, 255, 0.85); /* Glassy Surface */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     box-shadow: var(--shadow-panel);
     transition: 
-        right var(--transition-medium) var(--transition-easing-emphasized),
+        right 0.5s cubic-bezier(0.05, 0.7, 0.1, 1.0),
         background-color var(--transition-medium) var(--transition-easing-emphasized),
-        box-shadow var(--transition-medium) var(--transition-easing-emphasized);
+        box-shadow 0.5s cubic-bezier(0.05, 0.7, 0.1, 1.0);
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -694,6 +1043,10 @@ body.dark .theme-toggle-btn:hover {
 
 body.dark .settings-header {
     border-bottom-color: var(--opacity-border-light);
+}
+
+body.dark .settings-panel {
+    background-color: rgba(30, 30, 30, 0.85);
 }
 
 .settings-header h2 {
@@ -833,15 +1186,18 @@ body.dark .primary-btn:hover {
     opacity: var(--opacity-hidden);
     visibility: hidden;
     transition: 
-        opacity var(--transition-medium) var(--transition-easing-emphasized),
-        visibility var(--transition-medium) var(--transition-easing-emphasized),
-        background-color var(--transition-medium) var(--transition-easing-emphasized);
+        opacity 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0),
+        visibility 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0),
+        background-color 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0),
+        backdrop-filter 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0);
     z-index: 999;
 }
 
 .overlay.active {
     opacity: var(--opacity-visible);
     visibility: visible;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 /* Counter Toggle Animations */
 @keyframes counterFadeOut {
@@ -872,4 +1228,403 @@ body.dark .primary-btn:hover {
 
 #date.counter-switch-in {
     animation: counterFadeIn 0.3s var(--transition-easing-emphasized) forwards;
+}
+
+/* ============================================
+   EDIT MODE — ICON CONTAINER & REMOVE BADGE
+   ============================================ */
+
+/* Wrapper that allows absolute positioning of the remove badge */
+.app-icon-container {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+
+.app-icon-container img,
+.app-icon-container .app-icon-initial {
+    margin-bottom: 0;
+}
+
+/* Custom app icon — base wrapper (favicon shows naturally, no cropping) */
+.app-icon-custom {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* Favicon image inside custom icon */
+.app-icon-custom-img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+}
+
+/* Letter avatar fallback — applied by JS on img error */
+.app-icon-custom.app-icon-custom--letter {
+    border-radius: 50%;
+    overflow: hidden;
+    font-family: var(--font-family-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* Remove badge — red pill anchored top-right of icon container */
+.app-remove-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #B3261E; /* M3 Error color */
+    color: #FFFFFF;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    /* Staggered entrance animation */
+    animation: badgePop calc(200ms + var(--badge-delay, 0ms)) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: var(--badge-delay, 0ms);
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.app-remove-badge:hover {
+    background-color: #8C1D18;
+    transform: scale(1.15);
+}
+
+.app-remove-badge .material-symbols-outlined {
+    font-size: 12px;
+    color: #FFFFFF;
+    line-height: 1;
+}
+
+@keyframes badgePop {
+    from {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Remove animation — scale down + fade out on deletion */
+@keyframes removeItem {
+    0%   { opacity: 1; transform: scale(1); }
+    40%  { opacity: 0.6; transform: scale(0.85); }
+    100% { opacity: 0; transform: scale(0.5); }
+}
+
+.app-item.removing {
+    animation: removeItem 0.25s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+    pointer-events: none;
+}
+
+/* ============================================
+   EDIT MODE — "ADD NEW" PLACEHOLDER CARD
+   ============================================ */
+
+.app-item-add-new {
+    cursor: pointer;
+}
+
+.app-item-add-new .app-icon-container {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+}
+
+.app-icon-add-placeholder {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    border: 1.5px dashed var(--md-sys-color-on-surface);
+    opacity: 0.35;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition:
+        border-color 0.2s ease,
+        opacity 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.app-icon-add-placeholder .material-symbols-outlined {
+    font-size: 22px;
+    color: var(--md-sys-color-on-surface);
+}
+
+.app-item-add-new:hover .app-icon-add-placeholder {
+    border-style: solid;
+    border-color: var(--md-sys-color-primary);
+    opacity: 1;
+    background-color: rgba(100, 66, 214, 0.08);
+}
+
+body.dark .app-item-add-new:hover .app-icon-add-placeholder {
+    border-color: var(--md-sys-color-primary);
+    background-color: rgba(144, 202, 249, 0.08);
+}
+
+.app-item-add-new:hover .app-icon-add-placeholder .material-symbols-outlined {
+    color: var(--md-sys-color-primary);
+}
+
+.app-item-add-new span {
+    color: var(--md-sys-color-on-surface);
+    opacity: 0.55;
+}
+
+.app-item-add-new:hover span {
+    opacity: 1;
+    color: var(--md-sys-color-primary);
+}
+
+/* ============================================
+   ADD FAVORITE SHORTCUT MODAL
+   ============================================ */
+
+/* Semi-transparent scrim overlay */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background-color: rgba(0, 0, 0, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 
+        background-color 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0),
+        backdrop-filter 0.4s cubic-bezier(0.05, 0.7, 0.1, 1.0);
+}
+
+.modal-overlay.modal-overlay-active {
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Dialog box */
+.modal-dialog {
+    background-color: rgba(243, 245, 247, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 28px;
+    width: 400px;
+    max-width: calc(100vw - 48px);
+    padding: 24px;
+    box-shadow: var(--md-elevation-level-3);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    /* Scale-in animation */
+    transform: scale(0.85);
+    opacity: 0;
+    transition:
+        transform 0.5s cubic-bezier(0.05, 0.7, 0.1, 1.0),
+        opacity 0.5s cubic-bezier(0.05, 0.7, 0.1, 1.0);
+}
+
+.modal-overlay.modal-overlay-active .modal-dialog {
+    transform: scale(1);
+    opacity: 1;
+}
+
+body.dark .modal-dialog {
+    background-color: var(--md-sys-color-surface-container-high);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+    font-family: var(--font-family-heading);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--md-sys-color-on-surface);
+    margin: 0 0 28px 0;
+    line-height: 1.3;
+}
+
+/* M3 Outlined Text Fields */
+.modal-field-group {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.modal-field-label {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    background-color: var(--md-sys-color-surface-container-high);
+    padding: 0 4px;
+    font-family: var(--font-family-heading);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    opacity: 0.75;
+    transition: color 0.2s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.modal-field-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    font-family: var(--font-family-primary);
+    font-size: 1rem;
+    color: var(--md-sys-color-on-surface);
+    background-color: transparent;
+    border: 1px solid var(--opacity-border-light);
+    border-radius: 4px;
+    outline: none;
+    transition:
+        border-color 0.2s ease,
+        border-width 0.1s ease;
+}
+
+.modal-field-input::placeholder {
+    color: var(--opacity-placeholder-light);
+}
+
+.modal-field-input:focus {
+    border-color: var(--md-sys-color-primary);
+    border-width: 2px;
+    padding: 13px 15px;
+}
+
+.modal-field-input:focus + .modal-field-label,
+.modal-field-group:focus-within .modal-field-label {
+    color: var(--md-sys-color-primary);
+    opacity: 1;
+}
+
+.modal-field-input.field-error {
+    border-color: var(--md-sys-color-error);
+}
+
+.modal-field-helper {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--md-sys-color-error);
+    margin-top: 4px;
+    padding: 0 16px;
+    min-height: 16px;
+}
+
+/* Action bar */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 32px;
+}
+
+/* Cancel = M3 Text Button */
+.modal-btn-cancel {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 10px 16px;
+    border-radius: 20px;
+    font-family: var(--font-family-heading);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--md-sys-color-primary);
+    transition: background-color 0.2s ease;
+}
+
+.modal-btn-cancel:hover {
+    background-color: rgba(100, 66, 214, 0.08);
+}
+
+body.dark .modal-btn-cancel:hover {
+    background-color: rgba(144, 202, 249, 0.1);
+}
+
+/* Add = M3 Filled Button */
+.modal-btn-add {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    border: none;
+    cursor: pointer;
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-family: var(--font-family-heading);
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: var(--md-elevation-level-1);
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.modal-btn-add:hover:not(:disabled) {
+    background-color: var(--hover-primary-bg);
+    box-shadow: var(--md-elevation-level-2);
+}
+
+.modal-btn-add:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Dark theme field backgrounds */
+body.dark .modal-field-label {
+    background-color: var(--md-sys-color-surface-container-high);
+}
+
+/* ============================================
+   SNACKBAR NOTIFICATION
+   ============================================ */
+
+.apps-snackbar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(64px);
+    background-color: #323232;
+    color: #ffffff;
+    font-family: var(--font-family-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: var(--md-elevation-level-3);
+    z-index: 10000;
+    opacity: 0;
+    transition:
+        transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.3s ease;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.apps-snackbar.apps-snackbar-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+body.dark .apps-snackbar {
+    background-color: #e0e0e0;
+    color: #1c1c1c;
 }
