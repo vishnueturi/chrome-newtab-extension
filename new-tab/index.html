@@ -4,17 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Chrome keeps omnibox focus on the initial new-tab document; ?nt=1 forces a same-page navigation where in-page focus works. -->
-    <script>
-      (function () {
-        try {
-          if (new URLSearchParams(window.location.search).get("nt") === "1") return;
-          if (sessionStorage.getItem("ntp") === "1") return;
-          if (typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.getURL === "function") {
-            location.replace(chrome.runtime.getURL("new-tab/index.html") + "?nt=1");
-          }
-        } catch (_) {}
-      })();
-    </script>
+    <script src="bootstrap.js"></script>
     <link rel="icon" href="../icons/icon128.png?v=3" type="image/png" />
     <title>New Tab</title>
     <link rel="stylesheet" href="styles.css" />
