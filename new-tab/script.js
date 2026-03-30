@@ -93,7 +93,7 @@ function openSettingsPanel() {
     panel.classList.add("open");
     overlay.classList.add("active");
     header.classList.add("panel-open");
-    document.body.classList.add("popup-open");
+    document.body.classList.add("popup-open", "settings-open");
     
     // Focus on input
     setTimeout(() => greetingInput.focus(), 300);
@@ -108,7 +108,7 @@ function closeSettingsPanel() {
     panel.classList.remove("open");
     overlay.classList.remove("active");
     header.classList.remove("panel-open");
-    document.body.classList.remove("popup-open");
+    document.body.classList.remove("popup-open", "settings-open");
 }
 
 // Save greeting from panel
@@ -118,7 +118,16 @@ function saveGreeting() {
     
     if (newGreeting !== "") {
         localStorage.setItem("greeting", newGreeting);
-        document.getElementById("hello-world").textContent = newGreeting;
+        const helloEl = document.getElementById("hello-world");
+        helloEl.textContent = newGreeting;
+        helloEl.classList.remove("greeting-refresh");
+        void helloEl.offsetWidth;
+        helloEl.classList.add("greeting-refresh");
+        helloEl.addEventListener(
+            "animationend",
+            () => helloEl.classList.remove("greeting-refresh"),
+            { once: true }
+        );
         closeSettingsPanel();
     }
 }
@@ -725,6 +734,10 @@ function closeAddShortcutModal() {
     if (overlay._escHandler) document.removeEventListener('keydown', overlay._escHandler);
     overlay.classList.remove("modal-overlay-active");
     document.body.classList.remove("popup-open");
+    const appsDropdown = document.getElementById("apps-dropdown");
+    if (appsDropdown && appsDropdown.classList.contains("active")) {
+        document.body.classList.add("popup-open");
+    }
     overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
 }
 
@@ -778,7 +791,7 @@ function toggleAppsMenu(event) {
         setTimeout(() => {
             dropdown.classList.add('active');
             overlay.classList.add('active');
-            document.body.classList.add("popup-open");
+            document.body.classList.add("popup-open", "apps-menu-open");
         }, 10);
     }
 
@@ -797,7 +810,7 @@ function closeAppsMenu() {
         }
         dropdown.classList.remove('active');
         if (overlay) overlay.classList.remove('active');
-        document.body.classList.remove("popup-open");
+        document.body.classList.remove("popup-open", "apps-menu-open");
         
         setTimeout(() => {
             if (!dropdown.classList.contains('active')) {
