@@ -77,12 +77,25 @@ function initializeGreeting() {
 
 const DAY_TRACKER_INSTALLED_AT = "dayTrackerInstalledAt";
 const DAY_TRACKER_TOTAL_DAYS = "dayTrackerTotalDays";
+const DAY_TRACKER_START_DAY = "dayTrackerStartDay";
+const DAY_TRACKER_START_DAY_DATE = "dayTrackerStartDayDate";
 const DEFAULT_DAY_TRACKER_TOTAL = 21;
+const DEFAULT_DAY_TRACKER_START = 1;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function getDaysSinceEpoch() {
+    return Math.floor(Date.now() / MS_PER_DAY);
+}
 
 function normalizeTotalDays(raw) {
     const n = parseInt(String(raw).trim(), 10);
     if (!Number.isFinite(n) || n < 1) return DEFAULT_DAY_TRACKER_TOTAL;
+    return Math.min(9999, n);
+}
+
+function normalizeStartDay(raw) {
+    const n = parseInt(String(raw).trim(), 10);
+    if (!Number.isFinite(n) || n < 1) return DEFAULT_DAY_TRACKER_START;
     return Math.min(9999, n);
 }
 
@@ -92,6 +105,7 @@ function openSettingsPanel() {
     const overlay = document.getElementById("overlay");
     const greetingInput = document.getElementById("greeting-input");
     const totalDaysInput = document.getElementById("total-days-input");
+    const startDayInput = document.getElementById("start-day-input");
     const header = document.getElementById("header");
     
     // Close apps menu if open
@@ -101,10 +115,14 @@ function openSettingsPanel() {
     const currentGreeting = localStorage.getItem("greeting") || "Hello World!";
     greetingInput.value = currentGreeting;
 
-    chrome.storage.local.get([DAY_TRACKER_TOTAL_DAYS], (data) => {
+    chrome.storage.local.get([DAY_TRACKER_TOTAL_DAYS, DAY_TRACKER_START_DAY], (data) => {
         const v = data[DAY_TRACKER_TOTAL_DAYS];
         totalDaysInput.value =
             v != null && Number.isFinite(v) && v >= 1 ? String(v) : String(DEFAULT_DAY_TRACKER_TOTAL);
+        
+        const s = data[DAY_TRACKER_START_DAY];
+        startDayInput.value =
+            s != null && Number.isFinite(s) && s >= 1 ? String(s) : String(DEFAULT_DAY_TRACKER_START);
     });
     
     // Open panel and overlay
@@ -133,11 +151,16 @@ function closeSettingsPanel() {
 function saveGreeting() {
     const greetingInput = document.getElementById("greeting-input");
     const totalDaysInput = document.getElementById("total-days-input");
+    const startDayInput = document.getElementById("start-day-input");
     const newGreeting = greetingInput.value.trim();
     const totalDays = normalizeTotalDays(totalDaysInput.value);
+    const startDay = normalizeStartDay(startDayInput.value);
+    const startDayDate = getDaysSinceEpoch();
 
     dayTrackerState.totalDays = totalDays;
-    chrome.storage.local.set({ [DAY_TRACKER_TOTAL_DAYS]: totalDays }, refreshDayTrackerDisplay);
+    dayTrackerState.startDay = startDay;
+    dayTrackerState.startDayDate = startDayDate;
+    chrome.storage.local.set({ [DAY_TRACKER_TOTAL_DAYS]: totalDays, [DAY_TRACKER_START_DAY]: startDay, [DAY_TRACKER_START_DAY_DATE]: startDayDate }, refreshDayTrackerDisplay);
 
     if (newGreeting !== "") {
         localStorage.setItem("greeting", newGreeting);
@@ -159,6 +182,8 @@ function saveGreeting() {
 let dayTrackerState = {
     installedAt: null,
     totalDays: DEFAULT_DAY_TRACKER_TOTAL,
+    startDay: DEFAULT_DAY_TRACKER_START,
+    startDayDate: null,
 };
 
 function dayNumberFromInstall(installedAtMs) {
@@ -169,7 +194,17 @@ function dayNumberFromInstall(installedAtMs) {
 function refreshDayTrackerDisplay() {
     const dateElement = document.getElementById("date");
     if (!dateElement || dayTrackerState.installedAt == null) return;
-    const dayNum = dayNumberFromInstall(dayTrackerState.installedAt);
+    
+    let dayNum;
+    // If start day is set with a date, use calendar-based calculation
+    if (dayTrackerState.startDay != null && dayTrackerState.startDayDate != null) {
+        const daysSinceStart = getDaysSinceEpoch() - dayTrackerState.startDayDate;
+        dayNum = dayTrackerState.startDay + daysSinceStart;
+    } else {
+        // Fall back to install-based calculation
+        dayNum = dayNumberFromInstall(dayTrackerState.installedAt);
+    }
+    
     dateElement.textContent = `Day ${dayNum}/${dayTrackerState.totalDays}`;
 }
 
@@ -185,15 +220,26 @@ async function ensureDayTrackerInstalledAt() {
 
 async function loadDayTrackerState() {
     const installedAt = await ensureDayTrackerInstalledAt();
-    const rest = await chrome.storage.local.get([DAY_TRACKER_TOTAL_DAYS]);
+    const rest = await chrome.storage.local.get([DAY_TRACKER_TOTAL_DAYS, DAY_TRACKER_START_DAY, DAY_TRACKER_START_DAY_DATE]);
     let total = rest[DAY_TRACKER_TOTAL_DAYS];
+    let start = rest[DAY_TRACKER_START_DAY];
+    let startDate = rest[DAY_TRACKER_START_DAY_DATE];
+    
     if (total == null || !Number.isFinite(total) || total < 1) {
         total = DEFAULT_DAY_TRACKER_TOTAL;
         await chrome.storage.local.set({ [DAY_TRACKER_TOTAL_DAYS]: total });
     } else {
         total = Math.min(9999, total);
     }
-    dayTrackerState = { installedAt, totalDays: total };
+    
+    if (start == null || !Number.isFinite(start) || start < 1) {
+        start = DEFAULT_DAY_TRACKER_START;
+        startDate = null;
+    } else {
+        start = Math.min(9999, start);
+    }
+    
+    dayTrackerState = { installedAt, totalDays: total, startDay: start, startDayDate: startDate };
 }
 
 // Day tracker: elapsed 24-hour periods since install (day 1 = install day)
@@ -204,40 +250,40 @@ async function initializeDayTracker() {
 
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== "local") return;
-        if (changes[DAY_TRACKER_INSTALLED_AT] || changes[DAY_TRACKER_TOTAL_DAYS]) {
+        if (changes[DAY_TRACKER_INSTALLED_AT] || changes[DAY_TRACKER_TOTAL_DAYS] || changes[DAY_TRACKER_START_DAY] || changes[DAY_TRACKER_START_DAY_DATE]) {
             loadDayTrackerState().then(refreshDayTrackerDisplay);
         }
     });
 
-    let lastShownDay = dayNumberFromInstall(dayTrackerState.installedAt);
-    setInterval(() => {
+    let lastShownDay = null;
+    function updateIfNeeded() {
         if (dayTrackerState.installedAt == null) return;
-        const d = dayNumberFromInstall(dayTrackerState.installedAt);
-        if (d !== lastShownDay) {
-            lastShownDay = d;
+        let currentDay;
+        if (dayTrackerState.startDay != null && dayTrackerState.startDayDate != null) {
+            const daysSinceStart = getDaysSinceEpoch() - dayTrackerState.startDayDate;
+            currentDay = dayTrackerState.startDay + daysSinceStart;
+        } else {
+            currentDay = dayNumberFromInstall(dayTrackerState.installedAt);
+        }
+        if (currentDay !== lastShownDay) {
+            lastShownDay = currentDay;
             refreshDayTrackerDisplay();
         }
-    }, 60 * 1000);
+    }
+    updateIfNeeded();
+    setInterval(updateIfNeeded, 60 * 1000);
 }
 
 // --- Google Apps Menu Implementation ---
 
 const BUILTIN_APPS = [
-    { name: 'Account', url: 'https://myaccount.google.com/', icon: 'V', type: 'initial' },
+    
     { name: 'Drive', url: 'https://drive.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg' },
-    { name: 'Business', url: 'https://business.google.com/', icon: 'https://www.gstatic.com/images/branding/product/1x/business_profile_48dp.png' },
-    { name: 'Gmail', url: 'https://mail.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg' },
-    { name: 'YouTube', url: 'https://www.youtube.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg' },
-    { name: 'Photos', url: 'https://photos.google.com/', icon: 'https://www.gstatic.com/images/branding/product/1x/photos_48dp.png' },
-    { name: 'Gemini', url: 'https://gemini.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg' },
+    
+    
     { name: 'Maps', url: 'https://maps.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg' },
-    { name: 'Calendar', url: 'https://calendar.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg' },
-    { name: 'Search', url: 'https://www.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg' },
-    { name: 'News', url: 'https://news.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/d/da/Google_News_icon.svg' },
-    { name: 'Meet', url: 'https://meet.google.com/', icon: 'https://www.gstatic.com/images/branding/product/1x/meet_48dp.png' },
-    { name: 'Translate', url: 'https://translate.google.com/', icon: 'https://www.gstatic.com/images/branding/product/1x/translate_48dp.png' },
-    { name: 'Docs', url: 'https://docs.google.com/', icon: 'https://www.gstatic.com/images/branding/product/1x/docs_48dp.png' },
-    { name: 'Sheets', url: 'https://sheets.google.com/', icon: 'https://www.gstatic.com/images/branding/product/1x/sheets_48dp.png' },
+    
+    
 ];
 
 // Merged list of all apps (builtin + custom). Custom apps are loaded from storage.
@@ -431,7 +477,7 @@ function renderAppsMenu() {
 
     const titleSpan = document.createElement('span');
     titleSpan.className = 'apps-header-title';
-    titleSpan.textContent = 'Google Apps';
+    titleSpan.textContent = 'Apps';
 
     const editBtn = document.createElement('button');
     editBtn.id = 'apps-edit-btn';
