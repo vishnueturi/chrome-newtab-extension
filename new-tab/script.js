@@ -75,11 +75,23 @@ function initializeGreeting() {
     }
 }
 
+const DAY_TRACKER_INSTALLED_AT = "dayTrackerInstalledAt";
+const DAY_TRACKER_TOTAL_DAYS = "dayTrackerTotalDays";
+const DEFAULT_DAY_TRACKER_TOTAL = 21;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function normalizeTotalDays(raw) {
+    const n = parseInt(String(raw).trim(), 10);
+    if (!Number.isFinite(n) || n < 1) return DEFAULT_DAY_TRACKER_TOTAL;
+    return Math.min(9999, n);
+}
+
 // Open settings panel
 function openSettingsPanel() {
     const panel = document.getElementById("settings-panel");
     const overlay = document.getElementById("overlay");
     const greetingInput = document.getElementById("greeting-input");
+    const totalDaysInput = document.getElementById("total-days-input");
     const header = document.getElementById("header");
     
     // Close apps menu if open
@@ -88,6 +100,12 @@ function openSettingsPanel() {
     // Populate input with current greeting
     const currentGreeting = localStorage.getItem("greeting") || "Hello World!";
     greetingInput.value = currentGreeting;
+
+    chrome.storage.local.get([DAY_TRACKER_TOTAL_DAYS], (data) => {
+        const v = data[DAY_TRACKER_TOTAL_DAYS];
+        totalDaysInput.value =
+            v != null && Number.isFinite(v) && v >= 1 ? String(v) : String(DEFAULT_DAY_TRACKER_TOTAL);
+    });
     
     // Open panel and overlay
     panel.classList.add("open");
@@ -111,11 +129,16 @@ function closeSettingsPanel() {
     document.body.classList.remove("popup-open", "settings-open");
 }
 
-// Save greeting from panel
+// Save greeting and day-tracker settings from panel
 function saveGreeting() {
     const greetingInput = document.getElementById("greeting-input");
+    const totalDaysInput = document.getElementById("total-days-input");
     const newGreeting = greetingInput.value.trim();
-    
+    const totalDays = normalizeTotalDays(totalDaysInput.value);
+
+    dayTrackerState.totalDays = totalDays;
+    chrome.storage.local.set({ [DAY_TRACKER_TOTAL_DAYS]: totalDays }, refreshDayTrackerDisplay);
+
     if (newGreeting !== "") {
         localStorage.setItem("greeting", newGreeting);
         const helloEl = document.getElementById("hello-world");
@@ -128,57 +151,73 @@ function saveGreeting() {
             () => helloEl.classList.remove("greeting-refresh"),
             { once: true }
         );
-        closeSettingsPanel();
     }
+
+    closeSettingsPanel();
 }
 
-// Initialize Date
-function initializeDate() {
+let dayTrackerState = {
+    installedAt: null,
+    totalDays: DEFAULT_DAY_TRACKER_TOTAL,
+};
+
+function dayNumberFromInstall(installedAtMs) {
+    const elapsed = Date.now() - installedAtMs;
+    return Math.floor(elapsed / MS_PER_DAY) + 1;
+}
+
+function refreshDayTrackerDisplay() {
     const dateElement = document.getElementById("date");
-    let showWeekCounter = true;
-    
-    function calculateWeekNumber(now) {
-        const date = new Date(now);
-        date.setHours(0, 0, 0, 0);
-        date.setDate(date.getDate() + 4 - (date.getDay() || 7));
-        const yearStart = new Date(date.getFullYear(), 0, 1);
-        return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    if (!dateElement || dayTrackerState.installedAt == null) return;
+    const dayNum = dayNumberFromInstall(dayTrackerState.installedAt);
+    dateElement.textContent = `Day ${dayNum}/${dayTrackerState.totalDays}`;
+}
+
+async function ensureDayTrackerInstalledAt() {
+    const data = await chrome.storage.local.get([DAY_TRACKER_INSTALLED_AT]);
+    if (data[DAY_TRACKER_INSTALLED_AT] != null) {
+        return data[DAY_TRACKER_INSTALLED_AT];
     }
-    
-    function calculateDayNumber(now) {
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-        return Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000)) + 1;
+    const now = Date.now();
+    await chrome.storage.local.set({ [DAY_TRACKER_INSTALLED_AT]: now });
+    return now;
+}
+
+async function loadDayTrackerState() {
+    const installedAt = await ensureDayTrackerInstalledAt();
+    const rest = await chrome.storage.local.get([DAY_TRACKER_TOTAL_DAYS]);
+    let total = rest[DAY_TRACKER_TOTAL_DAYS];
+    if (total == null || !Number.isFinite(total) || total < 1) {
+        total = DEFAULT_DAY_TRACKER_TOTAL;
+        await chrome.storage.local.set({ [DAY_TRACKER_TOTAL_DAYS]: total });
+    } else {
+        total = Math.min(9999, total);
     }
-    
-    function updateDateDisplay() {
-        const now = new Date();
-        
-        if (showWeekCounter) {
-            const weekNumber = calculateWeekNumber(now);
-            dateElement.textContent = `Week ${weekNumber}/52`;
-        } else {
-            const dayNumber = calculateDayNumber(now);
-            dateElement.textContent = `Day ${dayNumber}/365`;
+    dayTrackerState = { installedAt, totalDays: total };
+}
+
+// Day tracker: elapsed 24-hour periods since install (day 1 = install day)
+async function initializeDayTracker() {
+    const dateElement = document.getElementById("date");
+    await loadDayTrackerState();
+    refreshDayTrackerDisplay();
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== "local") return;
+        if (changes[DAY_TRACKER_INSTALLED_AT] || changes[DAY_TRACKER_TOTAL_DAYS]) {
+            loadDayTrackerState().then(refreshDayTrackerDisplay);
         }
-    }
-
-    updateDateDisplay();
-
-    // Toggle between week and day counter on click with animation
-    dateElement.addEventListener("click", () => {
-        dateElement.classList.add("counter-switch");
-        
-        setTimeout(() => {
-            showWeekCounter = !showWeekCounter;
-            updateDateDisplay();
-            dateElement.classList.remove("counter-switch");
-            dateElement.classList.add("counter-switch-in");
-        }, 150);
-        
-        setTimeout(() => {
-            dateElement.classList.remove("counter-switch-in");
-        }, 450);
     });
+
+    let lastShownDay = dayNumberFromInstall(dayTrackerState.installedAt);
+    setInterval(() => {
+        if (dayTrackerState.installedAt == null) return;
+        const d = dayNumberFromInstall(dayTrackerState.installedAt);
+        if (d !== lastShownDay) {
+            lastShownDay = d;
+            refreshDayTrackerDisplay();
+        }
+    }, 60 * 1000);
 }
 
 // --- Google Apps Menu Implementation ---
@@ -824,7 +863,7 @@ function closeAppsMenu() {
 document.addEventListener("DOMContentLoaded", () => {
     initializeTheme();
     initializeGreeting();
-    initializeDate();
+    void initializeDayTracker();
     initializeAppsMenu();
 
     const themeToggleBtn = document.getElementById("theme-toggle-btn");
@@ -860,7 +899,13 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Allow Enter key to save
     const greetingInput = document.getElementById("greeting-input");
+    const totalDaysInput = document.getElementById("total-days-input");
     greetingInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            saveGreeting();
+        }
+    });
+    totalDaysInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
             saveGreeting();
         }

@@ -1167,7 +1167,8 @@ body.dark .settings-panel {
 
 
 /* Input Field */
-.setting-item input[type="text"] {
+.setting-item input[type="text"],
+.setting-item input[type="number"] {
     width: 100%;
     padding: var(--spacing-md) var(--spacing-lg);
     font-size: var(--font-size-body);
@@ -1185,24 +1186,29 @@ body.dark .settings-panel {
     box-sizing: border-box;
 }
 
-body.dark .setting-item input[type="text"] {
+body.dark .setting-item input[type="text"],
+body.dark .setting-item input[type="number"] {
     border-color: var(--opacity-border-light);
 }
 
-.setting-item input[type="text"]:focus {
+.setting-item input[type="text"]:focus,
+.setting-item input[type="number"]:focus {
     border-color: var(--md-sys-color-primary);
     box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.22);
 }
 
-body.dark .setting-item input[type="text"]:focus {
+body.dark .setting-item input[type="text"]:focus,
+body.dark .setting-item input[type="number"]:focus {
     box-shadow: 0 0 0 3px rgba(144, 202, 249, 0.28);
 }
 
-.setting-item input[type="text"]::placeholder {
+.setting-item input[type="text"]::placeholder,
+.setting-item input[type="number"]::placeholder {
     color: var(--opacity-placeholder-light);
 }
 
-body.dark .setting-item input[type="text"]::placeholder {
+body.dark .setting-item input[type="text"]::placeholder,
+body.dark .setting-item input[type="number"]::placeholder {
     color: var(--opacity-placeholder-light);
 }
 
@@ -1310,37 +1316,6 @@ body.settings-open .overlay.active {
     backdrop-filter: blur(22px) saturate(0.85);
     -webkit-backdrop-filter: blur(22px) saturate(0.85);
 }
-/* Counter Toggle Animations */
-@keyframes counterFadeOut {
-    0% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    100% {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-}
-
-@keyframes counterFadeIn {
-    0% {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-#date.counter-switch {
-    animation: counterFadeOut 0.3s var(--transition-easing-emphasized) forwards;
-}
-
-#date.counter-switch-in {
-    animation: counterFadeIn 0.3s var(--transition-easing-emphasized) forwards;
-}
-
 /* ============================================
    EDIT MODE — ICON CONTAINER & REMOVE BADGE
    ============================================ */
