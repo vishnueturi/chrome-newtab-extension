@@ -274,7 +274,7 @@ async function initializeDayTracker() {
     setInterval(updateIfNeeded, 60 * 1000);
 }
 
-// --- Google Apps Menu Implementation ---
+// --- Apps Menu Implementation ---
 
 const BUILTIN_APPS = [
     
@@ -296,9 +296,18 @@ const DEFAULT_FAVORITES = BUILTIN_APPS.slice(0, 8).map(a => a.name);
 // State
 let favoritesOrder = []; // names of favorite apps in order
 let isEditMode = false;
+let isRemoveMode = false;
+let removeSelection = new Set(); // names of apps marked for bulk removal
 let dragSrcIndex = null;
 let dragPlaceholderIndex = null;
 let preEditFavorites = [];
+
+// Phase derivation: remove mode is always entered from edit mode.
+function getMenuPhase() {
+    if (isRemoveMode) return 'remove';
+    if (isEditMode) return 'edit';
+    return 'normal';
+}
 
 function loadCustomApps() {
     try {
@@ -397,31 +406,95 @@ function createAppIcon(app) {
     }
 }
 
-function createAppItem(app, showRemoveBadge) {
-    const item = document.createElement(showRemoveBadge ? 'div' : 'a');
-    item.className = 'app-item';
-    if (!showRemoveBadge) {
+function createAppItem(app, phase) {
+    const isCustom = app.type === 'custom';
+    let item;
+
+    if (phase === 'normal') {
+        item = document.createElement('a');
         item.href = app.url;
         item.target = '_self';
+    } else {
+        item = document.createElement('div');
     }
-    item.title = app.name;
+    item.className = 'app-item';
     item.dataset.name = app.name;
+
+    if (phase === 'edit') {
+        if (isCustom) {
+            item.classList.add('app-item-editable');
+            item.title = `Edit ${app.name}`;
+            item.setAttribute('role', 'button');
+            item.setAttribute('tabindex', '0');
+            const openEdit = (e) => {
+                e.stopPropagation();
+                openShortcutModal({ mode: 'edit', app });
+            };
+            item.addEventListener('click', openEdit);
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openEdit(e);
+                }
+            });
+        } else {
+            // Built-in apps are inert in edit mode (no editable data).
+            item.title = app.name;
+            item.classList.add('app-item-inert');
+        }
+    } else if (phase === 'remove') {
+        const isSelected = removeSelection.has(app.name);
+        item.classList.add('app-item-selectable');
+        if (isSelected) item.classList.add('app-item-selected');
+        item.title = isSelected ? `Deselect ${app.name}` : `Select ${app.name}`;
+        item.setAttribute('role', 'checkbox');
+        item.setAttribute('tabindex', '0');
+        item.setAttribute('aria-checked', String(isSelected));
+        const toggle = (e) => {
+            e.stopPropagation();
+            toggleRemoveSelection(app.name);
+        };
+        item.addEventListener('click', toggle);
+        item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggle(e);
+            }
+        });
+    } else {
+        item.title = app.name;
+    }
 
     // Icon container wrapper (needed for badge positioning)
     const iconContainer = document.createElement('div');
     iconContainer.className = 'app-icon-container';
     iconContainer.appendChild(createAppIcon(app));
 
-    if (showRemoveBadge) {
-        const badge = document.createElement('button');
-        badge.className = 'app-remove-badge';
-        badge.setAttribute('aria-label', `Remove ${app.name}`);
-        badge.innerHTML = '<span class="material-symbols-outlined">close</span>';
-        badge.addEventListener('click', (e) => {
+    if (phase === 'edit' && isCustom) {
+        const editBadge = document.createElement('button');
+        editBadge.className = 'app-edit-badge';
+        editBadge.type = 'button';
+        editBadge.setAttribute('aria-label', `Edit ${app.name}`);
+        editBadge.innerHTML = '<span class="material-symbols-outlined">edit</span>';
+        editBadge.addEventListener('click', (e) => {
             e.stopPropagation();
-            animateRemoveItem(item, app.name);
+            openShortcutModal({ mode: 'edit', app });
         });
-        iconContainer.appendChild(badge);
+        iconContainer.appendChild(editBadge);
+    } else if (phase === 'remove') {
+        const checkbox = document.createElement('span');
+        const isSelected = removeSelection.has(app.name);
+        checkbox.className = 'app-select-checkbox' + (isSelected ? ' app-select-checkbox--checked' : '');
+        checkbox.setAttribute('aria-hidden', 'true');
+        if (isSelected) {
+            // Inline SVG checkmark — independent of Material Symbols font axes,
+            // uses currentColor so it picks up the right contrast color from CSS.
+            checkbox.innerHTML =
+                '<svg class="app-select-checkbox-mark" viewBox="0 0 24 24" focusable="false" aria-hidden="true">' +
+                '<path d="M9.55 17.575 4.225 12.25l1.425-1.425 3.9 3.9 8.825-8.825 1.4 1.45Z"/>' +
+                '</svg>';
+        }
+        iconContainer.appendChild(checkbox);
     }
 
     item.appendChild(iconContainer);
@@ -432,13 +505,6 @@ function createAppItem(app, showRemoveBadge) {
     item.appendChild(span);
 
     return item;
-}
-
-function animateRemoveItem(itemEl, appName) {
-    itemEl.classList.add('removing');
-    itemEl.addEventListener('animationend', () => {
-        removeFromFavorites(appName);
-    }, { once: true });
 }
 
 function createAddNewItem() {
@@ -471,55 +537,116 @@ function renderAppsMenu() {
     const dropdown = document.getElementById('apps-dropdown');
     if (!dropdown) return;
 
-    // --- Header (always: title + pencil toggle) ---
-    let header = dropdown.querySelector('.apps-dropdown-header');
+    const phase = getMenuPhase();
+
+    // --- Header ---
+    const header = dropdown.querySelector('.apps-dropdown-header');
     header.innerHTML = '';
+    header.dataset.phase = phase;
 
-    const titleSpan = document.createElement('span');
-    titleSpan.className = 'apps-header-title';
-    titleSpan.textContent = 'Apps';
-
-    const editBtn = document.createElement('button');
-    editBtn.id = 'apps-edit-btn';
-    editBtn.className = 'icon-btn edit-btn' + (isEditMode ? ' edit-btn-active' : '');
-    editBtn.title = isEditMode ? 'Done editing' : 'Edit shortcuts';
-    editBtn.innerHTML = '<span class="material-symbols-outlined">edit</span>';
-    editBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (isEditMode) commitEditMode();
-        else enterEditMode();
-    });
-
-    header.appendChild(titleSpan);
-    header.appendChild(editBtn);
+    if (phase === 'remove') {
+        renderRemoveModeHeader(header);
+    } else {
+        renderEditableHeader(header, phase);
+    }
 
     // --- Grid ---
     const grid = document.getElementById('apps-grid');
     grid.innerHTML = '';
+    grid.classList.toggle('edit-mode', phase === 'edit');
+    grid.classList.toggle('remove-mode', phase === 'remove');
 
     const favorites = getFavoriteApps();
 
-    if (isEditMode) {
-        grid.classList.add('edit-mode');
-
-        // Render each favorite with a remove badge
+    if (phase === 'normal') {
+        favorites.forEach(app => {
+            grid.appendChild(createAppItem(app, 'normal'));
+        });
+    } else {
         favorites.forEach((app, idx) => {
-            const item = createAppItem(app, true);
+            const item = createAppItem(app, phase);
             item.dataset.idx = idx;
-            // Staggered badge appearance
+            // Staggered badge / checkbox appearance
             item.style.setProperty('--badge-delay', `${idx * 30}ms`);
             grid.appendChild(item);
         });
-
-        // "Add New" placeholder card
-        grid.appendChild(createAddNewItem());
-
-    } else {
-        grid.classList.remove('edit-mode');
-        favorites.forEach(app => {
-            grid.appendChild(createAppItem(app, false));
-        });
+        if (phase === 'edit') {
+            grid.appendChild(createAddNewItem());
+        }
     }
+}
+
+function renderEditableHeader(header, phase) {
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'apps-header-title';
+    titleSpan.textContent = 'Apps';
+
+    const actions = document.createElement('div');
+    actions.className = 'apps-header-actions';
+
+    if (phase === 'edit') {
+        const removeBtn = document.createElement('button');
+        removeBtn.id = 'apps-remove-btn';
+        removeBtn.type = 'button';
+        removeBtn.className = 'icon-btn apps-header-icon-btn';
+        removeBtn.title = 'Remove shortcuts';
+        removeBtn.setAttribute('aria-label', 'Remove shortcuts');
+        removeBtn.innerHTML = '<span class="material-symbols-outlined">delete</span>';
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            enterRemoveMode();
+        });
+        actions.appendChild(removeBtn);
+    }
+
+    const editBtn = document.createElement('button');
+    editBtn.id = 'apps-edit-btn';
+    editBtn.type = 'button';
+    editBtn.className = 'icon-btn apps-header-icon-btn edit-btn' + (phase === 'edit' ? ' edit-btn-active' : '');
+    editBtn.title = phase === 'edit' ? 'Done editing' : 'Edit shortcuts';
+    editBtn.setAttribute('aria-label', editBtn.title);
+    editBtn.innerHTML = '<span class="material-symbols-outlined">edit</span>';
+    editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (phase === 'edit') commitEditMode();
+        else enterEditMode();
+    });
+    actions.appendChild(editBtn);
+
+    header.appendChild(titleSpan);
+    header.appendChild(actions);
+}
+
+function renderRemoveModeHeader(header) {
+    const count = removeSelection.size;
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'apps-text-btn';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        exitRemoveMode();
+    });
+
+    const counter = document.createElement('span');
+    counter.className = 'apps-remove-counter';
+    counter.textContent = count === 0 ? 'Select shortcuts' : `${count} selected`;
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'apps-filled-btn apps-filled-btn-danger';
+    confirmBtn.textContent = count > 0 ? `Remove (${count})` : 'Remove';
+    confirmBtn.disabled = count === 0;
+    confirmBtn.setAttribute('aria-label', count > 0 ? `Remove ${count} selected shortcuts` : 'Remove');
+    confirmBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmBulkRemove();
+    });
+
+    header.appendChild(cancelBtn);
+    header.appendChild(counter);
+    header.appendChild(confirmBtn);
 }
 
 // (renderDraggableGrid removed — edit mode now uses inline remove-badge approach per spec)
@@ -660,23 +787,88 @@ function removeFromFavorites(name) {
 function enterEditMode() {
     preEditFavorites = [...favoritesOrder];
     isEditMode = true;
+    isRemoveMode = false;
+    removeSelection = new Set();
     renderAppsMenu();
 }
 
 function cancelEditMode() {
     favoritesOrder = [...preEditFavorites];
     isEditMode = false;
+    isRemoveMode = false;
+    removeSelection = new Set();
     renderAppsMenu();
 }
 
 function commitEditMode() {
     saveFavorites();
     isEditMode = false;
+    isRemoveMode = false;
+    removeSelection = new Set();
     renderAppsMenu();
 }
 
-// ---------- Add Shortcut Modal ----------
+// ---------- Bulk Remove Mode ----------
+function enterRemoveMode() {
+    removeSelection = new Set();
+    isRemoveMode = true;
+    renderAppsMenu();
+}
+
+function exitRemoveMode() {
+    removeSelection = new Set();
+    isRemoveMode = false;
+    // Stay in edit mode (the user came from there).
+    renderAppsMenu();
+}
+
+function toggleRemoveSelection(name) {
+    if (removeSelection.has(name)) removeSelection.delete(name);
+    else removeSelection.add(name);
+    renderAppsMenu();
+}
+
+function confirmBulkRemove() {
+    if (removeSelection.size === 0) return;
+    const names = Array.from(removeSelection);
+
+    // Trigger removal animation on selected items
+    const items = Array.from(document.querySelectorAll('#apps-grid .app-item'));
+    items.forEach(itemEl => {
+        if (names.includes(itemEl.dataset.name)) {
+            itemEl.classList.add('removing');
+        }
+    });
+
+    // After animation, commit deletions
+    setTimeout(() => {
+        names.forEach(name => {
+            const idx = customApps.findIndex(a => a.name === name && a.type === 'custom');
+            if (idx !== -1) customApps.splice(idx, 1);
+        });
+        ALL_APPS = [...BUILTIN_APPS, ...customApps];
+        saveCustomApps();
+        favoritesOrder = favoritesOrder.filter(n => !names.includes(n));
+        preEditFavorites = preEditFavorites.filter(n => !names.includes(n));
+        saveFavorites();
+
+        const count = names.length;
+        removeSelection = new Set();
+        isRemoveMode = false;
+        // Remain in edit mode so the user can keep editing.
+        renderAppsMenu();
+        showSnackbar(`Removed ${count} shortcut${count === 1 ? '' : 's'}.`);
+    }, 250);
+}
+
+// ---------- Shortcut Modal (Add / Edit) ----------
 function openAddShortcutModal() {
+    openShortcutModal({ mode: 'add' });
+}
+
+function openShortcutModal({ mode = 'add', app = null } = {}) {
+    const isEdit = mode === 'edit' && app && app.type === 'custom';
+
     // Remove any existing modal
     const existing = document.getElementById('add-shortcut-modal-overlay');
     if (existing) existing.remove();
@@ -697,7 +889,7 @@ function openAddShortcutModal() {
     const title = document.createElement('h2');
     title.id = 'modal-title';
     title.className = 'modal-title';
-    title.textContent = 'Add Favorite Shortcut';
+    title.textContent = isEdit ? 'Edit Shortcut' : 'Add Favorite Shortcut';
 
     // Site Name field
     const nameGroup = buildTextField('modal-site-name', 'Site Name', 'e.g., My Site', 'text');
@@ -710,31 +902,49 @@ function openAddShortcutModal() {
     helperText.className = 'modal-field-helper';
     urlGroup.appendChild(helperText);
 
+    // Pre-fill in edit mode
+    if (isEdit) {
+        nameInput.value = app.name;
+        urlInput.value = app.url;
+    }
+
     // Actions
     const actions = document.createElement('div');
     actions.className = 'modal-actions';
 
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'modal-btn-cancel';
+    cancelBtn.type = 'button';
     cancelBtn.textContent = 'Cancel';
     cancelBtn.addEventListener('click', closeAddShortcutModal);
 
-    const addBtn = document.createElement('button');
-    addBtn.className = 'modal-btn-add';
-    addBtn.textContent = 'Add';
-    addBtn.disabled = true;
-    addBtn.id = 'modal-add-btn';
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'modal-btn-add';
+    submitBtn.type = 'button';
+    submitBtn.textContent = isEdit ? 'Save' : 'Add';
+    submitBtn.id = 'modal-add-btn';
 
     // Validation
     function validate() {
-        const nameOk = nameInput.value.trim().length >= 1;
+        const trimmedName = nameInput.value.trim();
+        const nameOk = trimmedName.length >= 1;
         let urlOk = false;
         try {
             const v = urlInput.value.trim();
             const u = new URL(/^https?:\/\//i.test(v) ? v : 'https://' + v);
             urlOk = (u.protocol === 'http:' || u.protocol === 'https:') && v.length > 0;
         } catch (_) {}
-        addBtn.disabled = !(nameOk && urlOk);
+
+        let dirty = true;
+        if (isEdit) {
+            const normalizedUrl = (() => {
+                const v = urlInput.value.trim();
+                return /^https?:\/\//i.test(v) ? v : 'https://' + v;
+            })();
+            dirty = trimmedName !== app.name || normalizedUrl !== app.url;
+        }
+
+        submitBtn.disabled = !(nameOk && urlOk && dirty);
         // URL helper
         if (urlInput.value.trim() && !urlOk) {
             helperText.textContent = 'Please enter a valid URL (e.g. https://example.com)';
@@ -747,12 +957,16 @@ function openAddShortcutModal() {
     nameInput.addEventListener('input', validate);
     urlInput.addEventListener('input', validate);
 
+    // Initial validation (disables button if nothing changed in edit mode)
+    submitBtn.disabled = true;
+    validate();
+
     // Enter key on either field submits if valid, or advances focus
     function handleEnterKey(e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        if (!addBtn.disabled) {
-            addBtn.click();
+        if (!submitBtn.disabled) {
+            submitBtn.click();
         } else if (e.currentTarget === nameInput) {
             // Advance to URL field if name is the only thing filled
             urlInput.focus();
@@ -761,17 +975,23 @@ function openAddShortcutModal() {
     nameInput.addEventListener('keydown', handleEnterKey);
     urlInput.addEventListener('keydown', handleEnterKey);
 
-    addBtn.addEventListener('click', () => {
+    submitBtn.addEventListener('click', () => {
         const name = nameInput.value.trim();
         let url = urlInput.value.trim();
         if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-        addCustomShortcut(name, url);
-        closeAddShortcutModal();
-        showSnackbar(`"${name}" added to your shortcuts!`);
+        if (isEdit) {
+            updateCustomShortcut(app.name, name, url);
+            closeAddShortcutModal();
+            showSnackbar(`"${name}" updated.`);
+        } else {
+            addCustomShortcut(name, url);
+            closeAddShortcutModal();
+            showSnackbar(`"${name}" added to your shortcuts!`);
+        }
     });
 
     actions.appendChild(cancelBtn);
-    actions.appendChild(addBtn);
+    actions.appendChild(submitBtn);
 
     dialog.append(title, nameGroup, urlGroup, actions);
     overlay.appendChild(dialog);
@@ -783,8 +1003,14 @@ function openAddShortcutModal() {
     // Animate in
     requestAnimationFrame(() => overlay.classList.add('modal-overlay-active'));
 
-    // Auto-focus site name
-    setTimeout(() => nameInput.focus(), 50);
+    // Auto-focus first field; in edit mode, place cursor at end of name
+    setTimeout(() => {
+        nameInput.focus();
+        if (isEdit) {
+            const len = nameInput.value.length;
+            try { nameInput.setSelectionRange(len, len); } catch (_) {}
+        }
+    }, 50);
     document.body.classList.add("popup-open");
 
     // Escape closes
@@ -838,6 +1064,58 @@ function addCustomShortcut(name, url) {
     renderAppsMenu();
 }
 
+function updateCustomShortcut(originalName, newName, newUrl) {
+    const idx = customApps.findIndex(a => a.name === originalName && a.type === 'custom');
+    if (idx === -1) return false;
+
+    const trimmedName = String(newName || '').trim();
+    if (!trimmedName) return false;
+
+    // Prevent collision with another existing app's name (built-in or other custom)
+    const nameChanged = trimmedName !== originalName;
+    if (nameChanged && ALL_APPS.some(a => a.name === trimmedName)) {
+        showSnackbar(`A shortcut named "${trimmedName}" already exists.`);
+        return false;
+    }
+
+    customApps[idx] = { ...customApps[idx], name: trimmedName, url: newUrl };
+    ALL_APPS = [...BUILTIN_APPS, ...customApps];
+    saveCustomApps();
+
+    // Keep favorites order in sync if the name changed
+    if (nameChanged) {
+        const favIdx = favoritesOrder.indexOf(originalName);
+        if (favIdx !== -1) {
+            favoritesOrder[favIdx] = trimmedName;
+            saveFavorites();
+        }
+        // Mirror the rename into the pre-edit snapshot so cancel/commit stays consistent
+        const preIdx = preEditFavorites.indexOf(originalName);
+        if (preIdx !== -1) preEditFavorites[preIdx] = trimmedName;
+    }
+
+    renderAppsMenu();
+    return true;
+}
+
+// Single-app delete API. Currently used only as a fallback / utility; the
+// in-UI removal flow uses the bulk-select "Remove" mode.
+function deleteCustomShortcut(name) {
+    const before = customApps.length;
+    customApps = customApps.filter(a => !(a.name === name && a.type === 'custom'));
+    if (customApps.length === before) {
+        // Not a custom app — just drop it from favorites.
+        removeFromFavorites(name);
+        return;
+    }
+    ALL_APPS = [...BUILTIN_APPS, ...customApps];
+    saveCustomApps();
+    favoritesOrder = favoritesOrder.filter(n => n !== name);
+    preEditFavorites = preEditFavorites.filter(n => n !== name);
+    saveFavorites();
+    renderAppsMenu();
+}
+
 function showSnackbar(message) {
     const existing = document.getElementById('apps-snackbar');
     if (existing) existing.remove();
@@ -870,8 +1148,12 @@ function toggleAppsMenu(event) {
         if (isEditMode) {
             saveFavorites();
             isEditMode = false;
-            renderAppsMenu();
         }
+        if (isRemoveMode) {
+            isRemoveMode = false;
+            removeSelection = new Set();
+        }
+        renderAppsMenu();
         dropdown.style.display = 'flex';
         setTimeout(() => {
             dropdown.classList.add('active');
@@ -887,12 +1169,19 @@ function closeAppsMenu() {
     const dropdown = document.getElementById('apps-dropdown');
     const overlay = document.getElementById('overlay');
     if (dropdown) {
-        // Auto-commit edit mode changes when user closes by clicking outside
+        // Auto-commit edit mode changes; bulk-remove pending selection is discarded.
+        let needsRender = false;
+        if (isRemoveMode) {
+            isRemoveMode = false;
+            removeSelection = new Set();
+            needsRender = true;
+        }
         if (isEditMode) {
             saveFavorites();
             isEditMode = false;
-            renderAppsMenu();
+            needsRender = true;
         }
+        if (needsRender) renderAppsMenu();
         dropdown.classList.remove('active');
         if (overlay) overlay.classList.remove('active');
         document.body.classList.remove("popup-open", "apps-menu-open");

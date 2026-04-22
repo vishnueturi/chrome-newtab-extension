@@ -559,7 +559,7 @@ body.dark .search-input {
     transition: opacity var(--transition-medium) var(--transition-easing-emphasized);
 }
 
-/* Header Controls — blur with main when Google Apps menu is open (header sits above overlay z-index) */
+/* Header Controls — blur with main when Apps menu is open (header sits above overlay z-index) */
 .header-controls {
     display: flex;
     align-items: center;
@@ -643,18 +643,21 @@ body.dark .apps-dropdown {
     font-weight: 500;
     color: var(--md-sys-color-on-surface);
     flex: 1;
-    text-align: center;
+    text-align: left;
+    padding-left: 6px;
     transition: color var(--transition-medium) var(--transition-easing-emphasized);
 }
 
-/* Normal mode: title left-aligned, edit btn right */
-.apps-dropdown-header:not(:has(.apps-text-btn)) .apps-header-title {
-    text-align: left;
-    padding-left: 6px;
+/* Right-side action group (Remove icon + Pencil) in edit mode */
+.apps-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
 }
 
-/* Edit icon button */
-.edit-btn {
+/* Shared M3 tonal icon button used in the apps dropdown header */
+.apps-header-icon-btn {
     width: 36px;
     height: 36px;
     flex-shrink: 0;
@@ -664,7 +667,7 @@ body.dark .apps-dropdown {
         color var(--transition-fast) var(--transition-easing-emphasized) !important;
 }
 
-.edit-btn:hover {
+.apps-header-icon-btn:hover {
     background-color: var(--md-sys-color-surface-container-highest) !important;
 }
 
@@ -675,6 +678,25 @@ body.dark .apps-dropdown {
 
 .edit-btn.edit-btn-active .material-symbols-outlined {
     color: var(--md-sys-color-on-primary) !important;
+}
+
+/* Remove-mode contextual header — counter sits in the middle */
+.apps-dropdown-header[data-phase="remove"] {
+    gap: 12px;
+}
+
+.apps-remove-counter {
+    flex: 1;
+    text-align: center;
+    font-family: var(--font-family-heading);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    opacity: 0.78;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color var(--transition-medium) var(--transition-easing-emphasized);
 }
 
 /* ---- Edit mode: Cancel (text btn) ---- */
@@ -722,6 +744,36 @@ body.dark .apps-dropdown {
 .apps-filled-btn:hover {
     background-color: var(--hover-primary-bg);
     box-shadow: var(--md-elevation-level-2);
+}
+
+.apps-filled-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    box-shadow: none;
+    background-color: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+}
+
+/* Destructive M3 filled button — used for "Remove (N)" in remove mode */
+.apps-filled-btn-danger {
+    background-color: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+}
+
+.apps-filled-btn-danger:hover:not(:disabled) {
+    /* Tonal darken on hover via overlay color shift */
+    filter: brightness(0.92);
+    background-color: var(--md-sys-color-error);
+    box-shadow: var(--md-elevation-level-2);
+}
+
+body.dark .apps-filled-btn-danger:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.apps-filled-btn-danger:disabled {
+    background-color: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
 }
 
 .apps-grid {
@@ -946,7 +998,8 @@ body.dark .more-app-item:hover {
 
 /* Fix for Material Symbols not showing in some buttons */
 .icon-btn .material-symbols-outlined,
-.app-remove-badge .material-symbols-outlined,
+.app-edit-badge .material-symbols-outlined,
+.app-select-checkbox .material-symbols-outlined,
 .app-icon-add-placeholder .material-symbols-outlined {
     font-family: 'Material Symbols Outlined' !important;
     font-weight: normal;
@@ -1363,16 +1416,17 @@ body.settings-open .overlay.active {
     color: #ffffff;
 }
 
-/* Remove badge — red pill anchored top-right of icon container */
-.app-remove-badge {
+/* Edit pencil badge — primary-color pill anchored top-RIGHT of icon container.
+   This is now the only per-app affordance in edit mode. */
+.app-edit-badge {
     position: absolute;
     top: -4px;
     right: -4px;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background-color: #B3261E; /* M3 Error color */
-    color: #FFFFFF;
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
     border: none;
     cursor: pointer;
     display: flex;
@@ -1380,22 +1434,144 @@ body.settings-open .overlay.active {
     justify-content: center;
     padding: 0;
     z-index: 5;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    /* Staggered entrance animation */
+    box-shadow: var(--md-elevation-level-2);
     animation: badgePop calc(200ms + var(--badge-delay, 0ms)) cubic-bezier(0.34, 1.56, 0.64, 1) both;
     animation-delay: var(--badge-delay, 0ms);
-    transition: background-color 0.15s ease, transform 0.15s ease;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.app-remove-badge:hover {
-    background-color: #8C1D18;
-    transform: scale(1.15);
+.app-edit-badge:hover {
+    background-color: var(--hover-primary-bg);
+    transform: scale(1.12);
+    box-shadow: var(--md-elevation-level-3);
 }
 
-.app-remove-badge .material-symbols-outlined {
-    font-size: 12px;
-    color: #FFFFFF;
+.app-edit-badge .material-symbols-outlined {
+    font-size: 13px;
+    color: var(--md-sys-color-on-primary);
     line-height: 1;
+}
+
+/* Editable card affordance (whole tile is clickable in edit mode for custom apps) */
+.app-item-editable {
+    cursor: pointer;
+}
+
+.app-item-editable:focus-visible,
+.app-item-selectable:focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: -2px;
+    border-radius: 16px;
+}
+
+/* Built-in apps in edit mode: not editable, no badge, neutral cursor */
+.app-item-inert {
+    cursor: default;
+    opacity: 0.7;
+}
+
+/* ============================================
+   REMOVE MODE — M3 SELECTION CHECKBOX
+   ============================================ */
+
+.app-item-selectable {
+    cursor: pointer;
+    transition:
+        background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Selected card: tonal primary container background + 2px primary ring */
+.app-item-selected {
+    background-color: rgba(25, 118, 210, 0.16);
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 2px var(--md-sys-color-primary);
+}
+
+body.dark .app-item-selected {
+    background-color: rgba(144, 202, 249, 0.18);
+}
+
+/* M3-style selection checkbox — anchored top-right of icon container.
+   Uses an inline SVG checkmark so it doesn't depend on Material Symbols font axes
+   (which the page only loads at wght=400, FILL=0).
+   A solid white border + drop-shadow keeps it readable against ANY icon background. */
+.app-select-checkbox {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    box-sizing: border-box;
+    border: 2px solid #ffffff;
+    background-color: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 5;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.45),
+        0 2px 6px rgba(0, 0, 0, 0.35);
+    animation: badgePop calc(200ms + var(--badge-delay, 0ms)) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: var(--badge-delay, 0ms);
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+body.dark .app-select-checkbox {
+    border-color: rgba(255, 255, 255, 0.92);
+    background-color: rgba(0, 0, 0, 0.55);
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.6),
+        0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+/* Hover hint on unchecked checkbox: tint toward primary */
+.app-item-selectable:hover .app-select-checkbox:not(.app-select-checkbox--checked) {
+    background-color: rgba(25, 118, 210, 0.55);
+    transform: scale(1.05);
+}
+
+body.dark .app-item-selectable:hover .app-select-checkbox:not(.app-select-checkbox--checked) {
+    background-color: rgba(144, 202, 249, 0.45);
+}
+
+/* Checked: filled with primary color, white border still rings it for contrast */
+.app-select-checkbox--checked {
+    background-color: var(--md-sys-color-primary);
+    border-color: #ffffff;
+    box-shadow:
+        0 0 0 1px var(--md-sys-color-primary),
+        0 3px 10px rgba(25, 118, 210, 0.55);
+}
+
+body.dark .app-select-checkbox--checked {
+    box-shadow:
+        0 0 0 1px var(--md-sys-color-primary),
+        0 3px 10px rgba(144, 202, 249, 0.45);
+}
+
+/* SVG checkmark — colored via currentColor (set on parent), bigger & bolder */
+.app-select-checkbox--checked {
+    color: var(--md-sys-color-on-primary);
+}
+
+.app-select-checkbox-mark {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    /* Subtle pop-in for the tick when toggled on */
+    animation: checkmarkPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes checkmarkPop {
+    from { opacity: 0; transform: scale(0.4); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 @keyframes badgePop {
