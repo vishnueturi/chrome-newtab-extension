@@ -83,8 +83,24 @@ const DEFAULT_DAY_TRACKER_TOTAL = 21;
 const DEFAULT_DAY_TRACKER_START = 1;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-function getDaysSinceEpoch() {
-    return Math.floor(Date.now() / MS_PER_DAY);
+// Day index based on the user's LOCAL calendar date (not UTC).
+// Two timestamps in the same local calendar day return the same number,
+// so it auto-increments exactly at local 00:00.
+function getLocalDayNumber(date = new Date()) {
+    return Math.floor(
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / MS_PER_DAY
+    );
+}
+
+// Milliseconds remaining until the next local midnight (00:00:00.000).
+function msUntilNextLocalMidnight(now = new Date()) {
+    const next = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        0, 0, 0, 0
+    );
+    return next.getTime() - now.getTime();
 }
 
 function normalizeTotalDays(raw) {
@@ -155,7 +171,7 @@ function saveGreeting() {
     const newGreeting = greetingInput.value.trim();
     const totalDays = normalizeTotalDays(totalDaysInput.value);
     const startDay = normalizeStartDay(startDayInput.value);
-    const startDayDate = getDaysSinceEpoch();
+    const startDayDate = getLocalDayNumber();
 
     dayTrackerState.totalDays = totalDays;
     dayTrackerState.startDay = startDay;
@@ -187,24 +203,24 @@ let dayTrackerState = {
 };
 
 function dayNumberFromInstall(installedAtMs) {
-    const elapsed = Date.now() - installedAtMs;
-    return Math.floor(elapsed / MS_PER_DAY) + 1;
+    // Calendar-day diff between install date and today, both in local time.
+    return getLocalDayNumber() - getLocalDayNumber(new Date(installedAtMs)) + 1;
+}
+
+function computeCurrentDayNumber() {
+    if (dayTrackerState.installedAt == null) return null;
+    if (dayTrackerState.startDay != null && dayTrackerState.startDayDate != null) {
+        const daysSinceStart = getLocalDayNumber() - dayTrackerState.startDayDate;
+        return dayTrackerState.startDay + daysSinceStart;
+    }
+    return dayNumberFromInstall(dayTrackerState.installedAt);
 }
 
 function refreshDayTrackerDisplay() {
     const dateElement = document.getElementById("date");
     if (!dateElement || dayTrackerState.installedAt == null) return;
-    
-    let dayNum;
-    // If start day is set with a date, use calendar-based calculation
-    if (dayTrackerState.startDay != null && dayTrackerState.startDayDate != null) {
-        const daysSinceStart = getDaysSinceEpoch() - dayTrackerState.startDayDate;
-        dayNum = dayTrackerState.startDay + daysSinceStart;
-    } else {
-        // Fall back to install-based calculation
-        dayNum = dayNumberFromInstall(dayTrackerState.installedAt);
-    }
-    
+
+    const dayNum = computeCurrentDayNumber();
     dateElement.textContent = `Day ${dayNum}/${dayTrackerState.totalDays}`;
 }
 
@@ -242,36 +258,54 @@ async function loadDayTrackerState() {
     dayTrackerState = { installedAt, totalDays: total, startDay: start, startDayDate: startDate };
 }
 
-// Day tracker: elapsed 24-hour periods since install (day 1 = install day)
+// Day tracker: counts in the user's LOCAL calendar; auto-increments at local 00:00.
 async function initializeDayTracker() {
-    const dateElement = document.getElementById("date");
     await loadDayTrackerState();
     refreshDayTrackerDisplay();
 
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== "local") return;
         if (changes[DAY_TRACKER_INSTALLED_AT] || changes[DAY_TRACKER_TOTAL_DAYS] || changes[DAY_TRACKER_START_DAY] || changes[DAY_TRACKER_START_DAY_DATE]) {
-            loadDayTrackerState().then(refreshDayTrackerDisplay);
+            loadDayTrackerState().then(() => {
+                refreshDayTrackerDisplay();
+                lastShownDay = computeCurrentDayNumber();
+            });
         }
     });
 
-    let lastShownDay = null;
+    let lastShownDay = computeCurrentDayNumber();
+    let midnightTimer = null;
+
     function updateIfNeeded() {
-        if (dayTrackerState.installedAt == null) return;
-        let currentDay;
-        if (dayTrackerState.startDay != null && dayTrackerState.startDayDate != null) {
-            const daysSinceStart = getDaysSinceEpoch() - dayTrackerState.startDayDate;
-            currentDay = dayTrackerState.startDay + daysSinceStart;
-        } else {
-            currentDay = dayNumberFromInstall(dayTrackerState.installedAt);
-        }
+        const currentDay = computeCurrentDayNumber();
         if (currentDay !== lastShownDay) {
             lastShownDay = currentDay;
             refreshDayTrackerDisplay();
         }
     }
-    updateIfNeeded();
-    setInterval(updateIfNeeded, 60 * 1000);
+
+    // Schedule a one-shot timer that fires at the next local midnight,
+    // updates the display, then re-schedules itself for the following midnight.
+    // A small +1s buffer guards against early-fire timer drift.
+    function scheduleMidnightTick() {
+        if (midnightTimer != null) clearTimeout(midnightTimer);
+        const delay = msUntilNextLocalMidnight() + 1000;
+        midnightTimer = setTimeout(() => {
+            updateIfNeeded();
+            scheduleMidnightTick();
+        }, delay);
+    }
+
+    // Catch DST shifts, system clock changes, or laptop wake-from-sleep:
+    // re-check whenever the tab becomes visible again.
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            updateIfNeeded();
+            scheduleMidnightTick();
+        }
+    });
+
+    scheduleMidnightTick();
 }
 
 // --- Apps Menu Implementation ---
