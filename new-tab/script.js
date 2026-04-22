@@ -404,6 +404,18 @@ function getAvatarColor(name) {
     return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+// Single source of truth for the "no logo available" state.
+// Always renders the same modern default: Material Symbols "language" glyph
+// in a tonal M3 squircle. Called from custom-app `onerror` / size-fallback.
+function applyDefaultAppLogo(iconWrap, img) {
+    if (img && img.parentNode) img.remove();
+    iconWrap.classList.remove('app-icon-custom--letter');
+    iconWrap.classList.add('app-icon-custom--fallback');
+    iconWrap.style.backgroundColor = '';
+    iconWrap.innerHTML =
+        '<span class="material-symbols-outlined app-icon-fallback-glyph" aria-hidden="true">language</span>';
+}
+
 function createAppIcon(app) {
     if (app.type === 'initial') {
         const iconWrap = document.createElement('div');
@@ -411,23 +423,26 @@ function createAppIcon(app) {
         iconWrap.textContent = app.icon;
         return iconWrap;
     } else if (app.type === 'custom') {
-        // Custom: show favicon naturally; fall back to letter avatar circle only on error
+        // Custom: try a real favicon; on failure (or low-quality result) swap
+        // in ONE consistent modern default logo (M3 "language" glyph on a
+        // tonal squircle). Single source of truth — see applyDefaultAppLogo().
         const iconWrap = document.createElement('div');
         iconWrap.className = 'app-icon-custom';
-        // Try favicon first — no background/circle until we know it fails
         const img = document.createElement('img');
-        img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(app.url)}&sz=64`;
+        // Use Google's faviconV2 endpoint with `fallback_opts=TYPE,SIZE,URL` —
+        // when the site has no real favicon this returns 404 instead of
+        // Google's pixelated default-globe, so our onerror branch fires.
+        img.src = `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(app.url)}&size=64`;
         img.alt = app.name;
         img.draggable = false;
         img.className = 'app-icon-custom-img';
-        img.onerror = () => {
-            // Favicon unavailable: switch to letter-avatar style
-            img.remove();
-            iconWrap.style.backgroundColor = getAvatarColor(app.name);
-            iconWrap.classList.add('app-icon-custom--letter');
-            const letter = document.createElement('span');
-            letter.textContent = app.name.charAt(0).toUpperCase();
-            iconWrap.appendChild(letter);
+        img.referrerPolicy = 'no-referrer';
+        const useDefault = () => applyDefaultAppLogo(iconWrap, img);
+        img.onerror = useDefault;
+        img.onload = () => {
+            // Defensive: if a real favicon comes back tiny (< 24px), it'll
+            // look pixelated when scaled — treat it as missing and fall back.
+            if (!img.naturalWidth || img.naturalWidth < 24) useDefault();
         };
         iconWrap.appendChild(img);
         return iconWrap;

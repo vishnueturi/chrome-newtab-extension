@@ -60,20 +60,21 @@
           />
         </div>
 
-        <div class="setting-item setting-column">
-          <label for="start-day-input">Day tracker — start day</label>
-          <input type="number" id="start-day-input" min="1" max="9999" inputmode="numeric" />
-        </div>
-
-        <div class="setting-item setting-column">
-          <label for="total-days-input">Day tracker — total days</label>
-          <input
-            type="number"
-            id="total-days-input"
-            min="1"
-            max="9999"
-            inputmode="numeric"
-          />
+        <div class="setting-item setting-row-group" aria-label="Day tracker">
+          <div class="setting-subitem setting-column">
+            <label for="start-day-input">Start day</label>
+            <input type="number" id="start-day-input" min="1" max="9999" inputmode="numeric" />
+          </div>
+          <div class="setting-subitem setting-column">
+            <label for="total-days-input">Total days</label>
+            <input
+              type="number"
+              id="total-days-input"
+              min="1"
+              max="9999"
+              inputmode="numeric"
+            />
+          </div>
         </div>
         
         <button id="save-greeting" class="primary-btn">Save</button>
