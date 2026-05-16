@@ -13,6 +13,8 @@
     --md-sys-color-on-background: #000000;
     --md-sys-color-surface: #ffffff;
     --md-sys-color-on-surface: #000000;
+    /* M3 on-surface-variant (supporting text, icons) */
+    --md-sys-color-on-surface-variant: #49454f;
     --md-sys-color-error: #b00020;
     --md-sys-color-on-error: #ffffff;
     
@@ -104,6 +106,7 @@ body.dark {
     --md-sys-color-on-background: #e0e0e0;
     --md-sys-color-surface: #2c2c2c;
     --md-sys-color-on-surface: #ffffff;
+    --md-sys-color-on-surface-variant: #cac4d0;
     --md-sys-color-error: #cf6679;
     --md-sys-color-on-error: #000000;
     
@@ -789,6 +792,17 @@ body.dark .apps-filled-btn-danger:hover:not(:disabled) {
     max-height: 380px;
 }
 
+/* One-row grid should not reserve/paint a vertical scrollbar. */
+.apps-grid.single-row {
+    overflow-y: hidden;
+    max-height: none;
+}
+
+.apps-grid.single-row::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
 /* Custom Scrollbar for Chrome */
 .apps-grid::-webkit-scrollbar {
     width: 6px;
@@ -840,6 +854,22 @@ body.dark .app-item:hover {
     height: 44px;
     margin-bottom: 0;
     object-fit: contain;
+}
+
+/* Google Search icon card style (matches Google apps launcher look) */
+.app-item img.app-icon-google-search {
+    padding: 0;
+    border-radius: 0;
+    background-color: transparent;
+    border: none;
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+body.dark .app-item img.app-icon-google-search {
+    background-color: transparent;
+    border: none;
 }
 
 .app-icon-initial {
@@ -1168,6 +1198,66 @@ body.dark .settings-panel {
     padding: var(--spacing-xxl);
     overflow-y: auto;
     flex: 1;
+    min-height: 0; /* allow scroll area to shrink in flex column layout */
+}
+
+/* Footer — GitHub (pinned to bottom of drawer, M3 icon-button affordance) */
+.settings-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-xxl) var(--spacing-lg);
+    border-top: var(--border-width-thin) solid var(--opacity-border-light);
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+        opacity 0.34s cubic-bezier(0.32, 0.72, 0, 1),
+        transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.settings-panel.open .settings-footer {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.26s;
+}
+
+body.dark .settings-footer {
+    border-top-color: var(--opacity-border-light);
+}
+
+.settings-github-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    box-sizing: border-box;
+    transition:
+        color var(--transition-fast) var(--transition-easing-emphasized),
+        background-color var(--transition-fast) var(--transition-easing-emphasized),
+        box-shadow var(--transition-fast) var(--transition-easing-emphasized);
+}
+
+.settings-github-link:hover {
+    color: var(--md-sys-color-on-surface);
+    background-color: var(--hover-icon-bg);
+}
+
+.settings-github-link:focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: 2px;
+}
+
+.settings-github-icon {
+    display: block;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    pointer-events: none;
 }
 
 .settings-content > .setting-item,
@@ -1896,12 +1986,60 @@ body.dark .apps-snackbar {
    Two number inputs side-by-side on a single row.
    ============================================ */
 
+/* Section heading shown above grouped fields (e.g. "Day tracker").
+   padding-top (not margin-top) creates a clear visual break from the previous
+   section without collapsing into the previous field's margin-bottom.
+   Small bottom margin keeps the heading visually attached to its fields. */
+.setting-section-heading {
+    margin: 0 0 var(--spacing-sm) 0;
+    padding-top: var(--spacing-lg);
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-medium);
+    color: var(--md-sys-color-on-surface);
+    letter-spacing: var(--letter-spacing-normal);
+    transition: color var(--transition-medium) var(--transition-easing-emphasized);
+}
+
+/* Supporting text + info icon (M3 on-surface-variant) — below day tracker inputs */
+.setting-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm) 0 var(--spacing-xl) 0;
+    padding: 0;
+    max-width: 100%;
+}
+
+.setting-hint__icon.material-symbols-outlined {
+    flex-shrink: 0;
+    width: 1.25em;
+    height: 1.25em;
+    font-size: 1.125rem; /* 18px — M3 list supporting icon */
+    line-height: 1;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    color: var(--md-sys-color-on-surface-variant);
+    transition: color var(--transition-medium) var(--transition-easing-emphasized);
+}
+
+.setting-hint__text {
+    font-family: var(--font-family-primary);
+    font-size: 0.8125rem; /* 13px — M3 body small / supporting */
+    line-height: 1.4;
+    font-weight: var(--font-weight-normal);
+    letter-spacing: 0.15px;
+    color: var(--md-sys-color-on-surface-variant);
+    margin: 0;
+    transition: color var(--transition-medium) var(--transition-easing-emphasized);
+}
+
 .setting-row-group {
     display: flex;
     flex-direction: row;
     align-items: stretch;
     gap: var(--spacing-md);
-    margin-bottom: var(--spacing-xl);
+    /* Bottom spacing before Save is handled by .setting-hint when the hint is present. */
+    margin-bottom: 0;
 }
 
 .setting-row-group .setting-subitem {
@@ -1949,8 +2087,10 @@ body.dark .setting-row-group input[type="number"]:focus {
     box-shadow: 0 0 0 3px rgba(144, 202, 249, 0.28);
 }
 
-/* Settings panel staggered entrance — also animate the new row group */
-.settings-content > .setting-row-group {
+/* Settings panel staggered entrance — also animate the new row group + its heading + hint */
+.settings-content > .setting-row-group,
+.settings-content > .setting-section-heading,
+.settings-content > .setting-hint {
     opacity: 0;
     transform: translateY(12px);
     transition:
@@ -1958,7 +2098,19 @@ body.dark .setting-row-group input[type="number"]:focus {
         transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+.settings-panel.open .settings-content > .setting-section-heading {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.16s;
+}
+
 .settings-panel.open .settings-content > .setting-row-group {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.17s;
+}
+
+.settings-panel.open .settings-content > .setting-hint {
     opacity: 1;
     transform: translateY(0);
     transition-delay: 0.18s;

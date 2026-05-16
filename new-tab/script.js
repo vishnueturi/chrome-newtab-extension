@@ -263,24 +263,55 @@ async function initializeDayTracker() {
     await loadDayTrackerState();
     refreshDayTrackerDisplay();
 
+    let lastShownDay = computeCurrentDayNumber();
+    let lastShownTotal = dayTrackerState.totalDays;
+    let midnightTimer = null;
+
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== "local") return;
         if (changes[DAY_TRACKER_INSTALLED_AT] || changes[DAY_TRACKER_TOTAL_DAYS] || changes[DAY_TRACKER_START_DAY] || changes[DAY_TRACKER_START_DAY_DATE]) {
             loadDayTrackerState().then(() => {
                 refreshDayTrackerDisplay();
                 lastShownDay = computeCurrentDayNumber();
+                lastShownTotal = dayTrackerState.totalDays;
             });
         }
     });
 
-    let lastShownDay = computeCurrentDayNumber();
-    let midnightTimer = null;
+    
 
     function updateIfNeeded() {
         const currentDay = computeCurrentDayNumber();
-        if (currentDay !== lastShownDay) {
-            lastShownDay = currentDay;
-            refreshDayTrackerDisplay();
+        if (currentDay === lastShownDay) return;
+
+        const prevDay = lastShownDay;
+        const prevTotal = lastShownTotal;
+
+        // Refresh shown values
+        lastShownDay = currentDay;
+        lastShownTotal = dayTrackerState.totalDays;
+        refreshDayTrackerDisplay();
+
+        // If we just moved past the previous total (e.g. from 21/21 -> 22/...)
+        // then by default reset the start day on the new day so the tracker
+        // restarts. However, if the user extended the total days (i.e.
+        // dayTrackerState.totalDays > prevTotal) we should NOT reset and
+        // instead continue counting with the extended total.
+        if (prevDay != null && prevTotal != null && prevDay >= prevTotal) {
+            // If total days was increased since yesterday, do nothing.
+            if (dayTrackerState.totalDays > prevTotal) {
+                return;
+            }
+
+            // Otherwise reset the start day to default from today.
+            const newStart = DEFAULT_DAY_TRACKER_START;
+            const newStartDate = getLocalDayNumber();
+            dayTrackerState.startDay = newStart;
+            dayTrackerState.startDayDate = newStartDate;
+            chrome.storage.local.set({ [DAY_TRACKER_START_DAY]: newStart, [DAY_TRACKER_START_DAY_DATE]: newStartDate }, () => {
+                // Reload state to keep things consistent and refresh display.
+                loadDayTrackerState().then(() => refreshDayTrackerDisplay());
+            });
         }
     }
 
@@ -311,13 +342,12 @@ async function initializeDayTracker() {
 // --- Apps Menu Implementation ---
 
 const BUILTIN_APPS = [
-    
-    { name: 'Drive', url: 'https://drive.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg' },
-    
-    
-    { name: 'Maps', url: 'https://maps.google.com/', icon: 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg' },
-    
-    
+    {
+        name: 'Search',
+        url: 'https://www.google.com/',
+        icon: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+        iconClass: 'app-icon-google-search'
+    }
 ];
 
 // Merged list of all apps (builtin + custom). Custom apps are loaded from storage.
@@ -367,8 +397,15 @@ function loadFavorites() {
         if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                // Filter out any names no longer valid
-                favoritesOrder = parsed.filter(n => ALL_APPS.some(a => a.name === n));
+                // Map saved names to canonical `ALL_APPS` names (case / whitespace safe).
+                const normalized = [];
+                for (const raw of parsed) {
+                    const key = String(raw == null ? '' : raw).trim();
+                    if (!key) continue;
+                    const app = getAppByNameCaseInsensitive(key);
+                    if (app) normalized.push(app.name);
+                }
+                favoritesOrder = Array.from(new Set(normalized));
                 if (favoritesOrder.length > 0) return;
             }
         }
@@ -451,6 +488,7 @@ function createAppIcon(app) {
         img.src = app.icon;
         img.alt = app.name;
         img.draggable = false;
+        if (app.iconClass) img.classList.add(app.iconClass);
         return img;
     }
 }
@@ -606,6 +644,9 @@ function renderAppsMenu() {
     grid.classList.toggle('remove-mode', phase === 'remove');
 
     const favorites = getFavoriteApps();
+    const gridItemCount = favorites.length + (phase === 'edit' ? 1 : 0);
+    const isSingleRow = gridItemCount <= 3;
+    grid.classList.toggle('single-row', isSingleRow);
 
     if (phase === 'normal') {
         favorites.forEach(app => {
@@ -628,7 +669,7 @@ function renderAppsMenu() {
 function renderEditableHeader(header, phase) {
     const titleSpan = document.createElement('span');
     titleSpan.className = 'apps-header-title';
-    titleSpan.textContent = 'Apps';
+    titleSpan.textContent = 'Pinned';
 
     const actions = document.createElement('div');
     actions.className = 'apps-header-actions';
@@ -938,11 +979,14 @@ function openShortcutModal({ mode = 'add', app = null } = {}) {
     const title = document.createElement('h2');
     title.id = 'modal-title';
     title.className = 'modal-title';
-    title.textContent = isEdit ? 'Edit Shortcut' : 'Add Favorite Shortcut';
+    title.textContent = isEdit ? 'Edit Shortcut' : 'Add Pinned Shortcut';
 
     // Site Name field
     const nameGroup = buildTextField('modal-site-name', 'Site Name', 'e.g., My Site', 'text');
     const nameInput = nameGroup.querySelector('input');
+    const nameHelperText = document.createElement('span');
+    nameHelperText.className = 'modal-field-helper';
+    nameGroup.appendChild(nameHelperText);
 
     // URL field
     const urlGroup = buildTextField('modal-url', 'URL', 'https://...', 'url');
@@ -976,7 +1020,10 @@ function openShortcutModal({ mode = 'add', app = null } = {}) {
     // Validation
     function validate() {
         const trimmedName = nameInput.value.trim();
-        const nameOk = trimmedName.length >= 1;
+        const existingApp = !isEdit ? getAppByNameCaseInsensitive(trimmedName) : null;
+        const duplicateVisibleName =
+            !isEdit && !!existingApp && favoritesOrder.some(n => n.trim().toLowerCase() === existingApp.name.trim().toLowerCase());
+        const nameOk = trimmedName.length >= 1 && !duplicateVisibleName;
         let urlOk = false;
         try {
             const v = urlInput.value.trim();
@@ -994,6 +1041,14 @@ function openShortcutModal({ mode = 'add', app = null } = {}) {
         }
 
         submitBtn.disabled = !(nameOk && urlOk && dirty);
+        // Name helper
+        if (duplicateVisibleName) {
+            nameHelperText.textContent = `A shortcut named "${trimmedName}" already exists.`;
+            nameInput.classList.add('field-error');
+        } else {
+            nameHelperText.textContent = '';
+            nameInput.classList.remove('field-error');
+        }
         // URL helper
         if (urlInput.value.trim() && !urlOk) {
             helperText.textContent = 'Please enter a valid URL (e.g. https://example.com)';
@@ -1033,7 +1088,12 @@ function openShortcutModal({ mode = 'add', app = null } = {}) {
             closeAddShortcutModal();
             showSnackbar(`"${name}" updated.`);
         } else {
-            addCustomShortcut(name, url);
+            const added = addCustomShortcut(name, url);
+            if (!added) {
+                validate();
+                showSnackbar(`A shortcut named "${name}" already exists.`);
+                return;
+            }
             closeAddShortcutModal();
             showSnackbar(`"${name}" added to your shortcuts!`);
         }
@@ -1102,8 +1162,23 @@ function closeAddShortcutModal() {
 }
 
 function addCustomShortcut(name, url) {
-    // Avoid duplicate names
-    const safeName = name;
+    const safeName = String(name || '').trim();
+    if (!safeName) return false;
+
+    // If the name already exists but is not currently visible in favorites,
+    // restore that existing shortcut instead of blocking with a duplicate error.
+    const existingApp = getAppByNameCaseInsensitive(safeName);
+    if (existingApp) {
+        const alreadyFavorite = favoritesOrder.some(
+            n => String(n || '').trim().toLowerCase() === existingApp.name.trim().toLowerCase()
+        );
+        if (alreadyFavorite) return false;
+        favoritesOrder.push(existingApp.name);
+        saveFavorites();
+        renderAppsMenu();
+        return true;
+    }
+
     const app = { name: safeName, url, icon: '', type: 'custom' };
     customApps.push(app);
     ALL_APPS = [...BUILTIN_APPS, ...customApps];
@@ -1111,6 +1186,13 @@ function addCustomShortcut(name, url) {
     favoritesOrder.push(safeName);
     saveFavorites();
     renderAppsMenu();
+    return true;
+}
+
+function getAppByNameCaseInsensitive(name) {
+    const normalizedName = String(name || '').trim().toLowerCase();
+    if (!normalizedName) return null;
+    return ALL_APPS.find(a => String(a.name || '').trim().toLowerCase() === normalizedName) || null;
 }
 
 function updateCustomShortcut(originalName, newName, newUrl) {
@@ -1122,7 +1204,14 @@ function updateCustomShortcut(originalName, newName, newUrl) {
 
     // Prevent collision with another existing app's name (built-in or other custom)
     const nameChanged = trimmedName !== originalName;
-    if (nameChanged && ALL_APPS.some(a => a.name === trimmedName)) {
+    if (
+        nameChanged &&
+        ALL_APPS.some(
+            (a) =>
+                a.name.toLowerCase() === trimmedName.toLowerCase() &&
+                !(a.type === 'custom' && a.name === originalName)
+        )
+    ) {
         showSnackbar(`A shortcut named "${trimmedName}" already exists.`);
         return false;
     }
