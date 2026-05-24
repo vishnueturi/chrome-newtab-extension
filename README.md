@@ -1,6 +1,7 @@
+
 # Chrome New Tab Extension
 
-A lightweight Chrome extension that replaces the default new tab page with a personalized greeting, current date, and Material Design 3 theming. Features automatic light/dark mode switching based on system preferences with manual toggle support.
+Privacy-first, minimal new tab: light/dark modes, day tracker, greeting message, and pinned shortcut links.
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)
@@ -8,35 +9,20 @@ A lightweight Chrome extension that replaces the default new tab page with a per
 
 ## ✨ Features
 
-- **Personalized Greeting** - Displays "Hello [username]!" every time you open a new tab
-- **Date Display** - Shows the current date in your system's locale format
-- **Theme Switching** - Automatic light/dark mode based on system preferences
-- **Manual Toggle** - Override theme with a sleek Material Design toggle switch
-- **Theme Persistence** - Remembers your theme preference using localStorage
-- **Material Design 3** - Modern, clean UI following Google's latest design guidelines
-- **Lightweight** - Built with vanilla JavaScript for optimal performance
+- **Privacy-first** - Minimal permissions and no telemetry; settings stay local.
+- **Minimal UI** - Clean, distraction-free layout focused on speed.
+- **Light / Dark modes** - Follows system theme with a manual toggle and persistent preference.
+- **Day tracker** - Simple day tracking element to mark progress or view the current day.
+- **Greeting message** - Shows a friendly, personalized greeting on each new tab.
+- **Pinned shortcuts** - Save and surface frequently used links for quick access.
 
 ## 🚀 Installation
 
-### From Source (Developer Mode)
+### Chrome Web Store (recommended)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/vishnueturi/chrome-newtab-extension.git
-   cd chrome-newtab-extension
-   ```
+The extension will be available from the Chrome Web Store once published.
 
-2. **Load the extension in Chrome**
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable **Developer mode** (toggle in the top-right corner)
-   - Click **Load unpacked**
-   - Select the `helloworld-extension` directory
-
-3. **Start using**
-   - Open a new tab to see your personalized new tab page!
-
-### From Chrome Web Store
-*Coming soon!*
+Install from the store link: [Chrome Web Store listing](https://chrome.google.com/webstore/detail/your-extension-id)
 
 ## 📁 Project Structure
 
@@ -44,31 +30,24 @@ A lightweight Chrome extension that replaces the default new tab page with a per
 helloworld-extension/
 ├── manifest.json           # Extension configuration (Manifest V3)
 ├── background/
-│   └── background.js      # Service worker (currently minimal)
+│   └── background.js      # Service worker
 ├── new-tab/
 │   ├── index.html         # New tab page structure
 │   ├── script.js          # Theme logic and date handling
 │   └── styles.css         # Material Design 3 styling
-├── icons/                 # Extension icons (to be added)
+├── icons/                 # Extension icons
 └── images/
 └──                        # Project assets
 
 ## 🛠️ Technologies Used
 
 - **Manifest V3** - Latest Chrome extension platform
+- **Chrome extension APIs** - `chrome.runtime`, `chrome.storage.local`, `chrome_url_overrides`
 - **Vanilla JavaScript** - No frameworks, pure performance
 - **Material Design 3** - Google's design system
 - **CSS Custom Properties** - Dynamic theming
 - **localStorage API** - Theme persistence
 - **matchMedia API** - System theme detection
-
-## 🔮 Planned Features
-
-- [ ] Quick links/bookmarks section
-- [ ] Inspirational quotes
-- [ ] Productivity timer/Pomodoro
-- [ ] Search bar integration
-- [ ] Settings page for customization
 
 ## 🤝 Contributing
 
