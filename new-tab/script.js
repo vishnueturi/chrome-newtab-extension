@@ -171,12 +171,27 @@ function saveGreeting() {
     const newGreeting = greetingInput.value.trim();
     const totalDays = normalizeTotalDays(totalDaysInput.value);
     const startDay = normalizeStartDay(startDayInput.value);
-    const startDayDate = getLocalDayNumber();
+
+    const shouldResetStartAnchor =
+        startDay !== dayTrackerState.startDay ||
+        dayTrackerState.startDayDate == null;
+    const startDayDate = shouldResetStartAnchor ? getLocalDayNumber() : dayTrackerState.startDayDate;
 
     dayTrackerState.totalDays = totalDays;
     dayTrackerState.startDay = startDay;
-    dayTrackerState.startDayDate = startDayDate;
-    chrome.storage.local.set({ [DAY_TRACKER_TOTAL_DAYS]: totalDays, [DAY_TRACKER_START_DAY]: startDay, [DAY_TRACKER_START_DAY_DATE]: startDayDate }, refreshDayTrackerDisplay);
+    if (shouldResetStartAnchor) {
+        dayTrackerState.startDayDate = startDayDate;
+    }
+
+    const storagePayload = {
+        [DAY_TRACKER_TOTAL_DAYS]: totalDays,
+        [DAY_TRACKER_START_DAY]: startDay,
+    };
+    if (shouldResetStartAnchor) {
+        storagePayload[DAY_TRACKER_START_DAY_DATE] = startDayDate;
+    }
+
+    chrome.storage.local.set(storagePayload, refreshDayTrackerDisplay);
 
     if (newGreeting !== "") {
         localStorage.setItem("greeting", newGreeting);
