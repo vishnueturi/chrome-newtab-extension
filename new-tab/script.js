@@ -302,11 +302,7 @@ async function initializeDayTracker() {
         const prevDay = lastShownDay;
         const prevTotal = lastShownTotal;
 
-        // Refresh shown values
-        lastShownDay = currentDay;
-        lastShownTotal = dayTrackerState.totalDays;
-        refreshDayTrackerDisplay();
-
+        // Check if we've reached/passed the end date BEFORE refreshing display
         // If we just moved past the previous total (e.g. from 21/21 -> 22/...)
         // then by default reset the start day on the new day so the tracker
         // restarts. However, if the user extended the total days (i.e.
@@ -315,6 +311,10 @@ async function initializeDayTracker() {
         if (prevDay != null && prevTotal != null && prevDay >= prevTotal) {
             // If total days was increased since yesterday, do nothing.
             if (dayTrackerState.totalDays > prevTotal) {
+                // Continue with extended total
+                lastShownDay = currentDay;
+                lastShownTotal = dayTrackerState.totalDays;
+                refreshDayTrackerDisplay();
                 return;
             }
 
@@ -325,9 +325,19 @@ async function initializeDayTracker() {
             dayTrackerState.startDayDate = newStartDate;
             chrome.storage.local.set({ [DAY_TRACKER_START_DAY]: newStart, [DAY_TRACKER_START_DAY_DATE]: newStartDate }, () => {
                 // Reload state to keep things consistent and refresh display.
-                loadDayTrackerState().then(() => refreshDayTrackerDisplay());
+                loadDayTrackerState().then(() => {
+                    lastShownDay = computeCurrentDayNumber();
+                    lastShownTotal = dayTrackerState.totalDays;
+                    refreshDayTrackerDisplay();
+                });
             });
+            return;
         }
+
+        // Normal day transition: refresh shown values
+        lastShownDay = currentDay;
+        lastShownTotal = dayTrackerState.totalDays;
+        refreshDayTrackerDisplay();
     }
 
     // Schedule a one-shot timer that fires at the next local midnight,
