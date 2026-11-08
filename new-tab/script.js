@@ -271,6 +271,17 @@ async function loadDayTrackerState() {
     }
     
     dayTrackerState = { installedAt, totalDays: total, startDay: start, startDayDate: startDate };
+
+    if (computeCurrentDayNumber() > total) {
+        start = DEFAULT_DAY_TRACKER_START;
+        startDate = getLocalDayNumber();
+        dayTrackerState.startDay = start;
+        dayTrackerState.startDayDate = startDate;
+        await chrome.storage.local.set({
+            [DAY_TRACKER_START_DAY]: start,
+            [DAY_TRACKER_START_DAY_DATE]: startDate,
+        });
+    }
 }
 
 // Day tracker: counts in the user's LOCAL calendar; auto-increments at local 00:00.
@@ -279,7 +290,6 @@ async function initializeDayTracker() {
     refreshDayTrackerDisplay();
 
     let lastShownDay = computeCurrentDayNumber();
-    let lastShownTotal = dayTrackerState.totalDays;
     let midnightTimer = null;
 
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -288,7 +298,6 @@ async function initializeDayTracker() {
             loadDayTrackerState().then(() => {
                 refreshDayTrackerDisplay();
                 lastShownDay = computeCurrentDayNumber();
-                lastShownTotal = dayTrackerState.totalDays;
             });
         }
     });
@@ -299,44 +308,16 @@ async function initializeDayTracker() {
         const currentDay = computeCurrentDayNumber();
         if (currentDay === lastShownDay) return;
 
-        const prevDay = lastShownDay;
-        const prevTotal = lastShownTotal;
-
-        // Check if we've reached/passed the end date BEFORE refreshing display
-        // If we just moved past the previous total (e.g. from 21/21 -> 22/...)
-        // then by default reset the start day on the new day so the tracker
-        // restarts. However, if the user extended the total days (i.e.
-        // dayTrackerState.totalDays > prevTotal) we should NOT reset and
-        // instead continue counting with the extended total.
-        if (prevDay != null && prevTotal != null && prevDay >= prevTotal) {
-            // If total days was increased since yesterday, do nothing.
-            if (dayTrackerState.totalDays > prevTotal) {
-                // Continue with extended total
-                lastShownDay = currentDay;
-                lastShownTotal = dayTrackerState.totalDays;
+        if (currentDay > dayTrackerState.totalDays) {
+            loadDayTrackerState().then(() => {
+                lastShownDay = computeCurrentDayNumber();
                 refreshDayTrackerDisplay();
-                return;
-            }
-
-            // Otherwise reset the start day to default from today.
-            const newStart = DEFAULT_DAY_TRACKER_START;
-            const newStartDate = getLocalDayNumber();
-            dayTrackerState.startDay = newStart;
-            dayTrackerState.startDayDate = newStartDate;
-            chrome.storage.local.set({ [DAY_TRACKER_START_DAY]: newStart, [DAY_TRACKER_START_DAY_DATE]: newStartDate }, () => {
-                // Reload state to keep things consistent and refresh display.
-                loadDayTrackerState().then(() => {
-                    lastShownDay = computeCurrentDayNumber();
-                    lastShownTotal = dayTrackerState.totalDays;
-                    refreshDayTrackerDisplay();
-                });
             });
             return;
         }
 
         // Normal day transition: refresh shown values
         lastShownDay = currentDay;
-        lastShownTotal = dayTrackerState.totalDays;
         refreshDayTrackerDisplay();
     }
 
